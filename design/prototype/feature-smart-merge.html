@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能食材合并功能 - 家宴菜谱小程序原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        
+        :root {
+            --primary-color: #FF9500;
+            --primary-color-light: #FFE4BF;
+            --secondary-color: #4CAF50;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-placeholder: #999999;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F6F6F6;
+            --border-color: #EEEEEE;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: var(--primary-color);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .feature-intro {
+            margin-bottom: 30px;
+        }
+        
+        .feature-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            max-width: 800px;
+        }
+        
+        .feature-highlights {
+            display: flex;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        
+        .highlight-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            flex: 1;
+            min-width: 240px;
+        }
+        
+        .highlight-icon {
+            width: 50px;
+            height: 50px;
+            background-color: var(--primary-color-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+            font-size: 20px;
+        }
+        
+        .highlight-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .highlight-text {
+            color: var(--text-secondary);
+        }
+        
+        .demo-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 40px;
+        }
+        
+        .demo-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .demo-icon {
+            width: 30px;
+            height: 30px;
+            background-color: var(--primary-color-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+        
+        .demo-description {
+            margin-bottom: 30px;
+            color: var(--text-secondary);
+        }
+        
+        .comparison {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .comparison-column {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .comparison-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .comparison-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .badge-before {
+            background-color: #FFEBEE;
+            color: #F44336;
+        }
+        
+        .badge-after {
+            background-color: #E8F5E9;
+            color: #4CAF50;
+        }
+        
+        .ingredient-list {
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .list-name {
+            font-weight: 600;
+        }
+        
+        .ingredient-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+        
+        .ingredient-item:last-child {
+            border-bottom: none;
+        }
+        
+        .ingredient-name {
+            display: flex;
+            align-items: center;
+        }
+        
+        .recipe-tag {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            background-color: var(--primary-color-light);
+            color: var(--primary-color);
+            margin-left: 8px;
+        }
+        
+        .ingredient-amount {
+            color: var(--text-secondary);
+        }
+        
+        .merge-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            color: var(--primary-color);
+            font-size: 24px;
+        }
+        
+        .highlight-box {
+            background-color: var(--primary-color-light);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .highlight-box-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+        
+        .highlight-box-content {
+            color: var(--text-primary);
+        }
+        
+        .algorithm-steps {
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .algorithm-title {
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+        
+        .step-list {
+            list-style-position: inside;
+            padding-left: 10px;
+        }
+        
+        .step-list li {
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+        }
+        
+        .step-list li strong {
+            color: var(--text-primary);
+        }
+        
+        .implementation-note {
+            background-color: #E8F5E9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            border-left: 4px solid var(--secondary-color);
+        }
+        
+        .note-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--secondary-color);
+        }
+        
+        /* 导航 */
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .navigation a {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .navigation a:hover {
+            background-color: #e68600;
+        }
+        
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navigation">
+            <a href="index.html">首页</a>
+            <a href="flow.html">核心流程</a>
+        </div>
+        
+        <h1>智能食材合并功能</h1>
+        
+        <div class="feature-intro">
+            <div class="feature-description">
+                智能食材合并是家宴菜谱小程序的核心技术特色，它能自动识别多道菜品中的相同或相似食材，合并计算总用量，生成合理的购物清单，提升用户采购体验。
+            </div>
+            
+            <div class="feature-highlights">
+                <div class="highlight-card">
+                    <div class="highlight-icon">🧠</div>
+                    <div class="highlight-title">智能识别</div>
+                    <div class="highlight-text">自动识别相同食材的不同表述方式，如"小葱"和"葱"、"土豆"和"马铃薯"等，准确合并同类食材。</div>
+                </div>
+                
+                <div class="highlight-card">
+                    <div class="highlight-icon">🧮</div>
+                    <div class="highlight-title">精确计算</div>
+                    <div class="highlight-text">智能处理不同计量单位间的换算，如"克"和"斤"、"勺"和"毫升"，计算出准确的总量。</div>
+                </div>
+                
+                <div class="highlight-card">
+                    <div class="highlight-icon">🔍</div>
+                    <div class="highlight-title">来源追踪</div>
+                    <div class="highlight-text">保留每种食材的来源菜谱信息，方便用户了解食材用途，可根据需要调整购买量。</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-container">
+            <div class="demo-title">
+                <div class="demo-icon">📊</div>
+                <span>合并效果对比</span>
+            </div>
+            
+            <div class="demo-description">
+                下面展示了三道菜（清蒸鲈鱼、红烧鸡翅和蒜蓉空心菜）合并前后的食材清单对比，显示了智能合并如何简化购物清单。
+            </div>
+            
+            <div class="comparison">
+                <div class="comparison-column">
+                    <div class="comparison-title">
+                        未合并食材清单
+                        <span class="comparison-badge badge-before">15项</span>
+                    </div>
+                    
+                    <!-- 清蒸鲈鱼 -->
+                    <div class="ingredient-list">
+                        <div class="list-header">
+                            <div class="list-name">清蒸鲈鱼</div>
+                        </div>
+                        
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">鲈鱼</div>
+                            <div class="ingredient-amount">1条（约500g）</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">葱</div>
+                            <div class="ingredient-amount">2根</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">姜</div>
+                            <div class="ingredient-amount">1小块</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">蒸鱼豉油</div>
+                            <div class="ingredient-amount">2勺</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">食用油</div>
+                            <div class="ingredient-amount">3勺</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">盐</div>
+                            <div class="ingredient-amount">适量</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 红烧鸡翅 -->
+                    <div class="ingredient-list">
+                        <div class="list-header">
+                            <div class="list-name">红烧鸡翅</div>
+                        </div>
+                        
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">鸡翅中</div>
+                            <div class="ingredient-amount">10个</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">生姜</div>
+                            <div class="ingredient-amount">3片</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">葱</div>
+                            <div class="ingredient-amount">2根</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">料酒</div>
+                            <div class="ingredient-amount">1勺</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">酱油</div>
+                            <div class="ingredient-amount">2勺</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">盐</div>
+                            <div class="ingredient-amount">适量</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">植物油</div>
+                            <div class="ingredient-amount">2勺</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 蒜蓉空心菜 -->
+                    <div class="ingredient-list">
+                        <div class="list-header">
+                            <div class="list-name">蒜蓉空心菜</div>
+                        </div>
+                        
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">空心菜</div>
+                            <div class="ingredient-amount">1把（约300g）</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">蒜</div>
+                            <div class="ingredient-amount">5瓣</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">食用油</div>
+                            <div class="ingredient-amount">2勺</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">盐</div>
+                            <div class="ingredient-amount">适量</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="merge-arrow">➡️</div>
+                
+                <div class="comparison-column">
+                    <div class="comparison-title">
+                        智能合并后
+                        <span class="comparison-badge badge-after">10项</span>
+                    </div>
+                    
+                    <!-- 肉类 -->
+                    <div class="ingredient-list">
+                        <div class="list-header">
+                            <div class="list-name">肉类</div>
+                        </div>
+                        
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">
+                                鸡翅中
+                                <span class="recipe-tag">红烧鸡翅</span>
+                            </div>
+                            <div class="ingredient-amount">10个</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 海鲜 -->
+                    <div class="ingredient-list">
+                        <div class="list-header">
+                            <div class="list-name">海鲜</div>
+                        </div>
+                        
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">
+                                鲈鱼
+                                <span class="recipe-tag">清蒸鲈鱼</span>
+                            </div>
+                            <div class="ingredient-amount">1条（约500g）</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 蔬菜 -->
+                    <div class="ingredient-list">
+                        <div class="list-header">
+                            <div class="list-name">蔬菜</div>
+                        </div>
+                        
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">
+                                空心菜
+                                <span class="recipe-tag">蒜蓉空心菜</span>
+                            </div>
+                            <div class="ingredient-amount">1把（约300g）</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">
+                                葱
+                                <span class="recipe-tag">清蒸鲈鱼</span>
+                                <span class="recipe-tag">红烧鸡翅</span>
+                            </div>
+                            <div class="ingredient-amount">4根</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">
+                                姜
+                                <span class="recipe-tag">清蒸鲈鱼</span>
+                                <span class="recipe-tag">红烧鸡翅</span>
+                            </div>
+                            <div class="ingredient-amount">1块</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">
+                                蒜
+                                <span class="recipe-tag">蒜蓉空心菜</span>
+                            </div>
+                            <div class="ingredient-amount">5瓣</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 调料 -->
+                    <div class="ingredient-list">
+                        <div class="list-header">
+                            <div class="list-name">调料</div>
+                        </div>
+                        
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">
+                                食用油
+                                <span class="recipe-tag">清蒸鲈鱼</span>
+                                <span class="recipe-tag">红烧鸡翅</span>
+                                <span class="recipe-tag">蒜蓉空心菜</span>
+                            </div>
+                            <div class="ingredient-amount">7勺</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">
+                                盐
+                                <span class="recipe-tag">通用</span>
+                            </div>
+                            <div class="ingredient-amount">适量</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">
+                                蒸鱼豉油
+                                <span class="recipe-tag">清蒸鲈鱼</span>
+                            </div>
+                            <div class="ingredient-amount">2勺</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">
+                                酱油
+                                <span class="recipe-tag">红烧鸡翅</span>
+                            </div>
+                            <div class="ingredient-amount">2勺</div>
+                        </div>
+                        <div class="ingredient-item">
+                            <div class="ingredient-name">
+                                料酒
+                                <span class="recipe-tag">红烧鸡翅</span>
+                            </div>
+                            <div class="ingredient-amount">1勺</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="highlight-box">
+                <div class="highlight-box-title">智能合并的优势</div>
+                <div class="highlight-box-content">
+                    <p>可以看到，通过智能合并，食材清单从原始的15项减少到合并后的10项，并按类别组织，提升了清晰度和实用性：</p>
+                    <ul style="padding-left: 20px; margin-top: 10px;">
+                        <li>相同食材自动合并（如葱、姜、油等）</li>
+                        <li>食材按类别分组（肉类、海鲜、蔬菜、调料）</li>
+                        <li>保留食材来源信息，增加可追溯性</li>
+                        <li>智能计算总用量，避免重复购买</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="demo-container">
+            <div class="demo-title">
+                <div class="demo-icon">🔍</div>
+                <span>智能合并技术原理</span>
+            </div>
+            
+            <div class="demo-description">
+                智能食材合并采用基于NLP（自然语言处理）和知识图谱的复合算法，能够准确识别食材及其计量单位，处理同义词和单位换算。
+            </div>
+            
+            <div class="algorithm-steps">
+                <div class="algorithm-title">合并算法流程</div>
+                <ol class="step-list">
+                    <li><strong>食材标准化处理</strong>：将各种不同表述（如"青葱"、"大葱"、"葱"）映射到标准词典中的统一表述</li>
+                    <li><strong>同义词识别</strong>：识别同义食材，如"土豆"和"马铃薯"、"豆腐干"和"香干"</li>
+                    <li><strong>计量单位换算</strong>：统一不同计量单位，处理"克"、"斤"、"两"等单位的换算</li>
+                    <li><strong>量词转换</strong>：处理"少许"、"适量"、"一小撮"等模糊量词</li>
+                    <li><strong>分量智能合并</strong>：计算相同食材的总用量，并选择最适合的表示方式</li>
+                    <li><strong>食材分类归组</strong>：将合并后的食材按类别（肉类、蔬菜等）自动分组</li>
+                    <li><strong>来源追踪标记</strong>：为每种食材保留其来源菜谱信息</li>
+                </ol>
+            </div>
+            
+            <div class="implementation-note">
+                <div class="note-title">实现说明</div>
+                <div class="note-content">
+                    该功能在客户端和服务端协同实现，基础食材库和转换规则存储在云端，定期更新以适应新的食材表述和计量方式。系统会根据用户的使用习惯不断优化合并算法，提高准确度。
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>家宴菜谱小程序原型 © 2023 | 设计文档</p>
+        </div>
+    </div>
+</body>
+</html> 

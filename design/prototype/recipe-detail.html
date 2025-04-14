@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>菜谱详情页 - 家宴菜谱小程序原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        
+        :root {
+            --primary-color: #FF9500;
+            --primary-color-light: #FFE4BF;
+            --secondary-color: #4CAF50;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-placeholder: #999999;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F6F6F6;
+            --border-color: #EEEEEE;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: var(--primary-color);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .preview-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .preview-description {
+            margin-bottom: 30px;
+            color: var(--text-secondary);
+        }
+        
+        /* 手机壳样式 */
+        .phone-container {
+            width: 375px;
+            height: 812px;
+            background-color: #fff;
+            border-radius: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+            margin: 0 auto 40px;
+            border: 10px solid #333;
+        }
+        
+        /* 手机顶部状态栏 */
+        .status-bar {
+            height: 44px;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .back-icon {
+            width: 24px;
+            height: 24px;
+            position: relative;
+        }
+        
+        .back-icon:before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-left: 2px solid white;
+            border-bottom: 2px solid white;
+            transform: rotate(45deg);
+            top: 6px;
+            left: 6px;
+        }
+        
+        .share-icon {
+            width: 24px;
+            height: 24px;
+            position: relative;
+        }
+        
+        .share-icon:before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border: 2px solid white;
+            border-radius: 50%;
+            top: 2px;
+            left: 6px;
+        }
+        
+        .share-icon:after {
+            content: '';
+            position: absolute;
+            width: 2px;
+            height: 8px;
+            background-color: white;
+            bottom: 2px;
+            left: 11px;
+        }
+        
+        /* 手机内容区域 */
+        .phone-content {
+            height: calc(100% - 44px);
+            overflow-y: auto;
+            background-color: var(--bg-secondary);
+        }
+        
+        /* 菜谱封面图 */
+        .recipe-cover {
+            width: 100%;
+            height: 220px;
+            background-color: #FFC107;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        /* 菜谱信息区域 */
+        .recipe-info {
+            background-color: white;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .recipe-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .recipe-subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+        
+        .recipe-stats {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        
+        .recipe-author {
+            display: flex;
+            align-items: center;
+        }
+        
+        .author-avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: #ddd;
+            margin-right: 8px;
+        }
+        
+        .recipe-actions {
+            display: flex;
+        }
+        
+        .action-item {
+            display: flex;
+            align-items: center;
+            margin-left: 15px;
+        }
+        
+        .action-icon {
+            width: 16px;
+            height: 16px;
+            background-color: #ddd;
+            border-radius: 50%;
+            margin-right: 4px;
+        }
+        
+        /* 菜谱概要信息 */
+        .recipe-summary {
+            display: flex;
+            background-color: white;
+            margin-top: 10px;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .summary-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+        
+        .summary-item:not(:last-child):after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 10%;
+            height: 80%;
+            width: 1px;
+            background-color: var(--border-color);
+        }
+        
+        .summary-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        
+        .summary-value {
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        /* 内容区块 */
+        .content-block {
+            background-color: white;
+            margin-top: 10px;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .block-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .title-icon {
+            width: 18px;
+            height: 18px;
+            margin-right: 5px;
+            background-color: var(--primary-color-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary-color);
+            font-size: 12px;
+        }
+        
+        /* 食材列表 */
+        .ingredients-list {
+            margin-bottom: 10px;
+        }
+        
+        .ingredient-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed var(--border-color);
+        }
+        
+        .ingredient-name {
+            font-weight: 500;
+        }
+        
+        .ingredient-amount {
+            color: var(--text-secondary);
+        }
+        
+        /* 烹饪步骤 */
+        .step-item {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        
+        .step-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-image {
+            width: 100%;
+            height: 150px;
+            background-color: #eee;
+            border-radius: 8px;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+        }
+        
+        /* 烹饪贴士 */
+        .tips-content {
+            background-color: var(--primary-color-light);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: var(--text-primary);
+        }
+        
+        /* 评价区域 */
+        .rating-container {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .stars-container {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        
+        .star {
+            width: 30px;
+            height: 30px;
+            background-color: #ddd;
+            clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+            margin-right: 8px;
+        }
+        
+        .star.filled {
+            background-color: #FFC107;
+        }
+        
+        .rating-stats {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        
+        /* 评论区 */
+        .comment-item {
+            display: flex;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .comment-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #ddd;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .comment-content {
+            flex: 1;
+        }
+        
+        .comment-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .comment-text {
+            margin-bottom: 5px;
+        }
+        
+        .comment-meta {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+        
+        /* 底部工具栏 */
+        .bottom-toolbar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            height: 50px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+        }
+        
+        .tool-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 20px;
+        }
+        
+        .tool-icon {
+            width: 20px;
+            height: 20px;
+            background-color: #ddd;
+            border-radius: 50%;
+            margin-bottom: 3px;
+        }
+        
+        .tool-text {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+        
+        .primary-btn {
+            flex: 1;
+            background-color: var(--primary-color);
+            color: white;
+            border-radius: 20px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 500;
+        }
+        
+        /* 元素说明区域 */
+        .annotations {
+            margin-top: 40px;
+        }
+        
+        .annotation-item {
+            margin-bottom: 20px;
+        }
+        
+        .annotation-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+        
+        .annotation-desc {
+            color: var(--text-secondary);
+        }
+        
+        /* 响应式调整 */
+        @media screen and (min-width: 768px) {
+            .content-layout {
+                display: flex;
+                align-items: flex-start;
+            }
+            
+            .phone-container {
+                flex-shrink: 0;
+                margin-right: 40px;
+            }
+            
+            .annotations {
+                flex: 1;
+                margin-top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回原型首页</a>
+        
+        <h1>菜谱详情页</h1>
+        
+        <div class="preview-title">功能概述</div>
+        <div class="preview-description">
+            菜谱详情页展示单个菜谱的完整信息，包括食材清单、步骤、烹饪技巧和评论等内容，用户可以通过此页面学习烹饪方法和与其他用户交流。
+        </div>
+        
+        <div class="content-layout">
+            <!-- 手机壳 -->
+            <div class="phone-container">
+                <!-- 状态栏 -->
+                <div class="status-bar">
+                    <div class="back-icon"></div>
+                    <span>菜谱详情</span>
+                    <div class="share-icon"></div>
+                </div>
+                
+                <!-- 内容区域 -->
+                <div class="phone-content">
+                    <!-- 菜谱封面图 -->
+                    <div class="recipe-cover">清蒸鲈鱼</div>
+                    
+                    <!-- 菜谱信息 -->
+                    <div class="recipe-info">
+                        <div class="recipe-title">清蒸鲈鱼</div>
+                        <div class="recipe-subtitle">保留鱼的鲜美口感，配以姜葱提香，简单易做又好吃。适合周末家庭聚餐。</div>
+                        <div class="recipe-stats">
+                            <div class="recipe-author">
+                                <div class="author-avatar"></div>
+                                <span>鱼香厨房</span>
+                            </div>
+                            <div class="recipe-actions">
+                                <div class="action-item">
+                                    <div class="action-icon"></div>
+                                    <span>256</span>
+                                </div>
+                                <div class="action-item">
+                                    <div class="action-icon"></div>
+                                    <span>收藏</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 菜谱概要信息 -->
+                    <div class="recipe-summary">
+                        <div class="summary-item">
+                            <div class="summary-label">烹饪时间</div>
+                            <div class="summary-value">30分钟</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">难度</div>
+                            <div class="summary-value">简单</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-label">分量</div>
+                            <div class="summary-value">3-4人</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 食材部分 -->
+                    <div class="content-block">
+                        <div class="block-title">
+                            <div class="title-icon">📋</div>
+                            <span>食材准备</span>
+                        </div>
+                        <div class="ingredients-list">
+                            <div class="ingredient-item">
+                                <div class="ingredient-name">鲈鱼</div>
+                                <div class="ingredient-amount">1条（约500g）</div>
+                            </div>
+                            <div class="ingredient-item">
+                                <div class="ingredient-name">葱</div>
+                                <div class="ingredient-amount">2根</div>
+                            </div>
+                            <div class="ingredient-item">
+                                <div class="ingredient-name">姜</div>
+                                <div class="ingredient-amount">1小块</div>
+                            </div>
+                            <div class="ingredient-item">
+                                <div class="ingredient-name">蒸鱼豉油</div>
+                                <div class="ingredient-amount">2勺</div>
+                            </div>
+                            <div class="ingredient-item">
+                                <div class="ingredient-name">食用油</div>
+                                <div class="ingredient-amount">3勺</div>
+                            </div>
+                            <div class="ingredient-item">
+                                <div class="ingredient-name">盐</div>
+                                <div class="ingredient-amount">适量</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 步骤部分 -->
+                    <div class="content-block">
+                        <div class="block-title">
+                            <div class="title-icon">🔪</div>
+                            <span>烹饪步骤</span>
+                        </div>
+                        
+                        <div class="step-item">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <div>鲈鱼处理干净，在鱼身两面划3-4刀，方便入味</div>
+                                <div class="step-image">步骤1图片</div>
+                            </div>
+                        </div>
+                        
+                        <div class="step-item">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <div>锅内加入清水，放入鱼，水量没过鱼身</div>
+                                <div class="step-image">步骤2图片</div>
+                            </div>
+                        </div>
+                        
+                        <div class="step-item">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <div>葱姜切丝，一半铺在鱼下面，一半撒在鱼身上</div>
+                                <div class="step-image">步骤3图片</div>
+                            </div>
+                        </div>
+                        
+                        <div class="step-item">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <div>锅中水烧开后，转中火蒸8-10分钟至鱼肉熟透</div>
+                                <div class="step-image">步骤4图片</div>
+                            </div>
+                        </div>
+                        
+                        <div class="step-item">
+                            <div class="step-number">5</div>
+                            <div class="step-content">
+                                <div>取出鱼，浇上热油和蒸鱼豉油即可</div>
+                                <div class="step-image">步骤5图片</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 烹饪贴士 -->
+                    <div class="content-block">
+                        <div class="block-title">
+                            <div class="title-icon">💡</div>
+                            <span>烹饪贴士</span>
+                        </div>
+                        <div class="tips-content">
+                            <p>1. 蒸鱼前最好在鱼身两面各划上3-4刀，这样更入味；</p>
+                            <p>2. 蒸鱼的时间不宜过长，以免鱼肉过老；</p>
+                            <p>3. 浇热油时要小心，油温不要太高，否则容易溅起；</p>
+                            <p>4. 可以根据个人口味调整蒸鱼豉油的用量。</p>
+                        </div>
+                    </div>
+                    
+                    <!-- 评价 -->
+                    <div class="content-block">
+                        <div class="block-title">
+                            <div class="title-icon">⭐</div>
+                            <span>评价</span>
+                        </div>
+                        <div class="rating-container">
+                            <div class="stars-container">
+                                <div class="star filled"></div>
+                                <div class="star filled"></div>
+                                <div class="star filled"></div>
+                                <div class="star filled"></div>
+                                <div class="star"></div>
+                            </div>
+                            <div class="rating-stats">
+                                <div>4.2分 · 26人评价</div>
+                                <div>查看全部 ></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 评论 -->
+                    <div class="content-block">
+                        <div class="block-title">
+                            <div class="title-icon">💬</div>
+                            <span>评论</span>
+                        </div>
+                        
+                        <div class="comment-item">
+                            <div class="comment-avatar"></div>
+                            <div class="comment-content">
+                                <div class="comment-name">家常美食爱好者</div>
+                                <div class="comment-text">按照步骤做出来的鱼非常鲜嫩，家人都很喜欢！</div>
+                                <div class="comment-meta">
+                                    <div>2023-07-15</div>
+                                    <div>回复</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="comment-item">
+                            <div class="comment-avatar"></div>
+                            <div class="comment-content">
+                                <div class="comment-name">美食小当家</div>
+                                <div class="comment-text">我在最后加了一点香菜点缀，味道和颜值都提升了！推荐大家试试。</div>
+                                <div class="comment-meta">
+                                    <div>2023-07-10</div>
+                                    <div>回复</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 底部空白区 为了不被工具栏遮挡 -->
+                    <div style="height: 60px;"></div>
+                </div>
+                
+                <!-- 底部工具栏 -->
+                <div class="bottom-toolbar">
+                    <div class="tool-btn">
+                        <div class="tool-icon"></div>
+                        <div class="tool-text">收藏</div>
+                    </div>
+                    <div class="tool-btn">
+                        <div class="tool-icon"></div>
+                        <div class="tool-text">评论</div>
+                    </div>
+                    <div class="primary-btn">添加到点菜单</div>
+                </div>
+            </div>
+            
+            <!-- 元素说明区域 -->
+            <div class="annotations">
+                <div class="annotation-item">
+                    <div class="annotation-title">菜谱封面与信息</div>
+                    <div class="annotation-desc">
+                        顶部展示菜谱的封面图片和基本信息，包括菜名、简介、作者以及点赞和收藏功能。用户可以通过顶部导航栏返回或分享菜谱。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">菜谱概要</div>
+                    <div class="annotation-desc">
+                        概要区域显示烹饪时间、难度和适合的人数，让用户快速了解这道菜的基本烹饪参数，便于判断是否适合自己尝试。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">食材清单</div>
+                    <div class="annotation-desc">
+                        以列表形式展示所需的全部食材和用量，用户可以一目了然地了解需要准备哪些材料。系统支持一键添加所有食材到购物清单功能。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">步骤详解</div>
+                    <div class="annotation-desc">
+                        烹饪步骤按顺序编号展示，每个步骤配有文字说明和图片示例，便于用户理解和操作。用户可以标记当前执行到哪个步骤，系统会记住进度。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">烹饪贴士</div>
+                    <div class="annotation-desc">
+                        提供专业的烹饪技巧和注意事项，帮助用户避免常见错误，优化烹饪体验和成品效果。这些贴士通常来自于菜谱作者的经验总结。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">评价与评论</div>
+                    <div class="annotation-desc">
+                        展示其他用户对此菜谱的评分和评论，帮助用户了解菜谱的受欢迎程度和实际烹饪效果。用户也可以添加自己的评分和评论，分享烹饪心得。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">底部工具栏</div>
+                    <div class="annotation-desc">
+                        固定在底部的工具栏提供快捷操作，包括收藏、评论和添加到点菜单。其中"添加到点菜单"是核心功能，方便用户将喜欢的菜谱加入到家宴计划中。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">交互说明</div>
+                    <div class="annotation-desc">
+                        <ul style="padding-left: 20px; margin-top: 10px;">
+                            <li>步骤图片：点击可查看大图，支持左右滑动切换步骤</li>
+                            <li>食材项：长按可查看食材详情和替代品建议</li>
+                            <li>评分：用户可点击星星进行打分</li>
+                            <li>评论：点击回复按钮可直接回复他人评论</li>
+                            <li>双击屏幕：可收藏/取消收藏菜谱</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

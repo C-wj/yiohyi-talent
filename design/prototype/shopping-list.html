@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>购物清单页 - 家宴菜谱小程序原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        
+        :root {
+            --primary-color: #FF9500;
+            --primary-color-light: #FFE4BF;
+            --secondary-color: #4CAF50;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-placeholder: #999999;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F6F6F6;
+            --border-color: #EEEEEE;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: var(--primary-color);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .preview-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .preview-description {
+            margin-bottom: 30px;
+            color: var(--text-secondary);
+        }
+        
+        /* 手机壳样式 */
+        .phone-container {
+            width: 375px;
+            height: 812px;
+            background-color: #fff;
+            border-radius: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+            margin: 0 auto 40px;
+            border: 10px solid #333;
+        }
+        
+        /* 手机顶部状态栏 */
+        .status-bar {
+            height: 44px;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .back-icon {
+            width: 24px;
+            height: 24px;
+            position: relative;
+        }
+        
+        .back-icon:before {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-left: 2px solid white;
+            border-bottom: 2px solid white;
+            transform: rotate(45deg);
+            top: 6px;
+            left: 6px;
+        }
+        
+        .share-icon {
+            width: 24px;
+            height: 24px;
+            position: relative;
+        }
+        
+        .share-icon:before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border: 2px solid white;
+            border-radius: 50%;
+            top: 4px;
+            left: 4px;
+        }
+        
+        /* 手机内容区域 */
+        .phone-content {
+            height: calc(100% - 44px - 50px);
+            overflow-y: auto;
+            background-color: var(--bg-secondary);
+        }
+        
+        /* 购物清单摘要 */
+        .summary-card {
+            background-color: white;
+            margin: 15px;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .summary-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .summary-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+        
+        .summary-date {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        
+        .summary-stats {
+            display: flex;
+            justify-content: space-between;
+            border-top: 1px solid var(--border-color);
+            padding-top: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        /* 操作按钮 */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 0 15px 15px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            background-color: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            color: var(--text-primary);
+        }
+        
+        .action-btn.primary {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        .action-icon {
+            margin-right: 5px;
+            font-size: 16px;
+        }
+        
+        /* 分类标签 */
+        .category-tabs {
+            display: flex;
+            padding: 0 15px 15px;
+            overflow-x: auto;
+            gap: 10px;
+        }
+        
+        .category-tab {
+            padding: 8px 16px;
+            background-color: var(--bg-primary);
+            border-radius: 16px;
+            white-space: nowrap;
+            font-size: 13px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .category-tab.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        
+        /* 购物清单项目 */
+        .shopping-list {
+            padding: 0 15px;
+        }
+        
+        .list-section {
+            margin-bottom: 20px;
+        }
+        
+        .section-header {
+            padding: 10px 0;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            background-color: var(--primary-color-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            color: var(--primary-color);
+        }
+        
+        .list-items {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .list-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .item-checkbox {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--border-color);
+            margin-right: 15px;
+            position: relative;
+        }
+        
+        .item-checkbox.checked {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        
+        .item-checkbox.checked:after {
+            content: '';
+            position: absolute;
+            width: 6px;
+            height: 10px;
+            border-right: 2px solid white;
+            border-bottom: 2px solid white;
+            transform: rotate(45deg);
+            top: 2px;
+            left: 6px;
+        }
+        
+        .item-details {
+            flex: 1;
+        }
+        
+        .item-name {
+            margin-bottom: 3px;
+        }
+        
+        .list-item.checked .item-name {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+        
+        .item-source {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .item-amount {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        /* 添加项目 */
+        .add-item {
+            display: flex;
+            align-items: center;
+            background-color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin: 15px;
+        }
+        
+        .add-icon-btn {
+            width: 24px;
+            height: 24px;
+            background-color: var(--primary-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 15px;
+        }
+        
+        .add-input {
+            flex: 1;
+            border: none;
+            outline: none;
+            font-size: 14px;
+        }
+        
+        .add-input::placeholder {
+            color: var(--text-placeholder);
+        }
+        
+        /* 底部工具栏 */
+        .bottom-toolbar {
+            height: 50px;
+            background-color: white;
+            display: flex;
+            border-top: 1px solid var(--border-color);
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        
+        .tool-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .tool-icon {
+            margin-right: 5px;
+            font-size: 16px;
+        }
+        
+        /* 元素说明区域 */
+        .annotations {
+            margin-top: 40px;
+        }
+        
+        .annotation-item {
+            margin-bottom: 20px;
+        }
+        
+        .annotation-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+        
+        .annotation-desc {
+            color: var(--text-secondary);
+        }
+        
+        /* 响应式调整 */
+        @media screen and (min-width: 768px) {
+            .content-layout {
+                display: flex;
+                align-items: flex-start;
+            }
+            
+            .phone-container {
+                flex-shrink: 0;
+                margin-right: 40px;
+            }
+            
+            .annotations {
+                flex: 1;
+                margin-top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回原型首页</a>
+        
+        <h1>购物清单页</h1>
+        
+        <div class="preview-title">功能概述</div>
+        <div class="preview-description">
+            购物清单页根据点菜系统中的菜品自动生成采购清单，智能合并相同食材并显示用量，用户可以标记购买状态，分享给家人，添加额外项目。
+        </div>
+        
+        <div class="content-layout">
+            <!-- 手机壳 -->
+            <div class="phone-container">
+                <!-- 状态栏 -->
+                <div class="status-bar">
+                    <div class="back-icon"></div>
+                    <span>购物清单</span>
+                    <div class="share-icon"></div>
+                </div>
+                
+                <!-- 内容区域 -->
+                <div class="phone-content">
+                    <!-- 购物清单摘要 -->
+                    <div class="summary-card">
+                        <div class="summary-header">
+                            <div class="summary-title">11月25日 家宴购物清单</div>
+                            <div class="summary-date">晚餐 · 4人用餐</div>
+                        </div>
+                        
+                        <div class="summary-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">15</div>
+                                <div class="stat-label">食材总数</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">9</div>
+                                <div class="stat-label">已购买</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">3</div>
+                                <div class="stat-label">菜品数</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="action-buttons">
+                        <div class="action-btn">
+                            <span class="action-icon">↻</span>
+                            <span>重置状态</span>
+                        </div>
+                        <div class="action-btn primary">
+                            <span class="action-icon">✓</span>
+                            <span>全部标记完成</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 分类标签 -->
+                    <div class="category-tabs">
+                        <div class="category-tab active">全部</div>
+                        <div class="category-tab">肉类</div>
+                        <div class="category-tab">蔬菜</div>
+                        <div class="category-tab">海鲜</div>
+                        <div class="category-tab">调料</div>
+                        <div class="category-tab">其他</div>
+                    </div>
+                    
+                    <!-- 购物清单 -->
+                    <div class="shopping-list">
+                        <!-- 肉类 -->
+                        <div class="list-section">
+                            <div class="section-header">
+                                <div class="section-icon">🍖</div>
+                                <span>肉类</span>
+                            </div>
+                            
+                            <div class="list-items">
+                                <div class="list-item">
+                                    <div class="item-checkbox"></div>
+                                    <div class="item-details">
+                                        <div class="item-name">鸡翅中</div>
+                                        <div class="item-source">来自：红烧鸡翅</div>
+                                    </div>
+                                    <div class="item-amount">10个</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 海鲜 -->
+                        <div class="list-section">
+                            <div class="section-header">
+                                <div class="section-icon">🐟</div>
+                                <span>海鲜</span>
+                            </div>
+                            
+                            <div class="list-items">
+                                <div class="list-item checked">
+                                    <div class="item-checkbox checked"></div>
+                                    <div class="item-details">
+                                        <div class="item-name">鲈鱼</div>
+                                        <div class="item-source">来自：清蒸鲈鱼</div>
+                                    </div>
+                                    <div class="item-amount">1条（约500g）</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 蔬菜 -->
+                        <div class="list-section">
+                            <div class="section-header">
+                                <div class="section-icon">🥬</div>
+                                <span>蔬菜</span>
+                            </div>
+                            
+                            <div class="list-items">
+                                <div class="list-item checked">
+                                    <div class="item-checkbox checked"></div>
+                                    <div class="item-details">
+                                        <div class="item-name">空心菜</div>
+                                        <div class="item-source">来自：蒜蓉空心菜</div>
+                                    </div>
+                                    <div class="item-amount">1把（约300g）</div>
+                                </div>
+                                
+                                <div class="list-item checked">
+                                    <div class="item-checkbox checked"></div>
+                                    <div class="item-details">
+                                        <div class="item-name">葱</div>
+                                        <div class="item-source">来自：清蒸鲈鱼，红烧鸡翅</div>
+                                    </div>
+                                    <div class="item-amount">4根</div>
+                                </div>
+                                
+                                <div class="list-item">
+                                    <div class="item-checkbox"></div>
+                                    <div class="item-details">
+                                        <div class="item-name">姜</div>
+                                        <div class="item-source">来自：清蒸鲈鱼，红烧鸡翅</div>
+                                    </div>
+                                    <div class="item-amount">1块</div>
+                                </div>
+                                
+                                <div class="list-item checked">
+                                    <div class="item-checkbox checked"></div>
+                                    <div class="item-details">
+                                        <div class="item-name">蒜</div>
+                                        <div class="item-source">来自：蒜蓉空心菜</div>
+                                    </div>
+                                    <div class="item-amount">5瓣</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 调料 -->
+                        <div class="list-section">
+                            <div class="section-header">
+                                <div class="section-icon">🧂</div>
+                                <span>调料</span>
+                            </div>
+                            
+                            <div class="list-items">
+                                <div class="list-item checked">
+                                    <div class="item-checkbox checked"></div>
+                                    <div class="item-details">
+                                        <div class="item-name">蒸鱼豉油</div>
+                                        <div class="item-source">来自：清蒸鲈鱼</div>
+                                    </div>
+                                    <div class="item-amount">2勺</div>
+                                </div>
+                                
+                                <div class="list-item checked">
+                                    <div class="item-checkbox checked"></div>
+                                    <div class="item-details">
+                                        <div class="item-name">料酒</div>
+                                        <div class="item-source">来自：红烧鸡翅</div>
+                                    </div>
+                                    <div class="item-amount">1勺</div>
+                                </div>
+                                
+                                <div class="list-item">
+                                    <div class="item-checkbox"></div>
+                                    <div class="item-details">
+                                        <div class="item-name">酱油</div>
+                                        <div class="item-source">来自：红烧鸡翅</div>
+                                    </div>
+                                    <div class="item-amount">2勺</div>
+                                </div>
+                                
+                                <div class="list-item checked">
+                                    <div class="item-checkbox checked"></div>
+                                    <div class="item-details">
+                                        <div class="item-name">盐</div>
+                                        <div class="item-source">来自：清蒸鲈鱼，红烧鸡翅，蒜蓉空心菜</div>
+                                    </div>
+                                    <div class="item-amount">适量</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 添加项目 -->
+                    <div class="add-item">
+                        <div class="add-icon-btn">+</div>
+                        <input type="text" class="add-input" placeholder="添加其他物品...">
+                    </div>
+                </div>
+                
+                <!-- 底部工具栏 -->
+                <div class="bottom-toolbar">
+                    <div class="tool-btn">
+                        <span class="tool-icon">📄</span>
+                        <span>导出清单</span>
+                    </div>
+                    <div class="tool-btn">
+                        <span class="tool-icon">📱</span>
+                        <span>微信分享</span>
+                    </div>
+                    <div class="tool-btn">
+                        <span class="tool-icon">🔔</span>
+                        <span>提醒我</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 元素说明区域 -->
+            <div class="annotations">
+                <div class="annotation-item">
+                    <div class="annotation-title">购物清单摘要</div>
+                    <div class="annotation-desc">
+                        顶部摘要卡片显示清单的基本信息，包括日期、餐次、用餐人数，以及食材总数和已购买数量的统计。用户可以快速了解购物进度。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">食材分类</div>
+                    <div class="annotation-desc">
+                        食材根据类型分为肉类、海鲜、蔬菜、调料等类别，方便用户在超市购物时有针对性地采购。用户可以通过顶部的分类标签快速切换查看不同类别的食材。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">智能合并</div>
+                    <div class="annotation-desc">
+                        系统会自动识别并合并来自不同菜品的相同食材，计算总用量。例如，多个菜谱中都需要葱，系统会将它们合并并计算总共需要的数量，避免重复购买。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">食材来源追踪</div>
+                    <div class="annotation-desc">
+                        每个食材项目下方都会显示它来自哪些菜谱，帮助用户了解食材的用途。如果用户决定不做某道菜，也能知道哪些食材可以不买或减少购买量。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">购买状态标记</div>
+                    <div class="annotation-desc">
+                        用户可以通过点击复选框标记已购买的食材，使购物过程更有条理。系统会自动统计已购买和待购买的数量，并在顶部摘要中显示进度。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">添加自定义项目</div>
+                    <div class="annotation-desc">
+                        用户可以添加菜谱中未包含的其他物品到购物清单，例如饮料、水果或日用品等。这些自定义项目会与食材一起显示在清单中，可以同样标记购买状态。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">分享与导出</div>
+                    <div class="annotation-desc">
+                        底部工具栏提供分享和导出功能，用户可以将购物清单分享给家人，或导出为文本/图片保存。分享功能特别适合家庭成员分工采购的场景。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">提醒功能</div>
+                    <div class="annotation-desc">
+                        用户可以设置购物提醒，系统会在指定时间发送提醒通知，避免用户忘记购物。提醒可以设置为一次性或重复（例如每周六上午），并可选择是否同时提醒家庭成员。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">交互说明</div>
+                    <div class="annotation-desc">
+                        <ul style="padding-left: 20px; margin-top: 10px;">
+                            <li>长按食材：显示详细信息，包括可能的替代品和购买建议</li>
+                            <li>左滑食材：快速显示删除和编辑按钮</li>
+                            <li>点击食材来源：可跳转到对应的菜谱详情页</li>
+                            <li>拖拽排序：可以手动调整食材的显示顺序</li>
+                            <li>位置提醒：如果开启位置权限，当用户接近超市时会发送购物提醒</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

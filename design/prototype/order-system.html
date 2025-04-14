@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家宴点菜系统 - 家宴菜谱小程序原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        
+        :root {
+            --primary-color: #FF9500;
+            --primary-color-light: #FFE4BF;
+            --secondary-color: #4CAF50;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-placeholder: #999999;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F6F6F6;
+            --border-color: #EEEEEE;
+            --price-color: #FF4D4F;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: var(--primary-color);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .preview-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .preview-description {
+            margin-bottom: 30px;
+            color: var(--text-secondary);
+        }
+        
+        /* 手机壳样式 */
+        .phone-container {
+            width: 375px;
+            height: 812px;
+            background-color: #fff;
+            border-radius: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+            margin: 0 auto 40px;
+            border: 10px solid #333;
+        }
+        
+        /* 手机顶部状态栏 */
+        .status-bar {
+            height: 44px;
+            background-color: #FF4D4F;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .status-time {
+            font-size: 16px;
+        }
+        
+        .status-icons {
+            display: flex;
+            align-items: center;
+        }
+        
+        .status-icons span {
+            margin-left: 5px;
+        }
+        
+        /* 餐厅信息区 */
+        .restaurant-header {
+            background-color: #FF4D4F;
+            padding: 15px;
+            color: white;
+            display: flex;
+            align-items: center;
+        }
+        
+        .restaurant-logo {
+            width: 60px;
+            height: 60px;
+            background-color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            overflow: hidden;
+            color: #333;
+            font-size: 24px;
+        }
+        
+        .restaurant-logo img {
+            width: 40px;
+            height: 40px;
+        }
+        
+        .restaurant-info {
+            flex: 1;
+        }
+        
+        .restaurant-name {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        /* 快捷操作区 */
+        .quick-actions {
+            display: flex;
+            background-color: #FF4D4F;
+            padding: 0 15px 15px;
+        }
+        
+        .action-button {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+            font-size: 12px;
+        }
+        
+        .action-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+            font-size: 20px;
+        }
+        
+        /* 菜单区域 */
+        .menu-container {
+            display: flex;
+            height: calc(100% - 44px - 90px - 60px); /* 减去状态栏、餐厅信息+快捷操作和底部结算栏的高度 */
+            overflow: hidden;
+        }
+        
+        /* 左侧分类导航 */
+        .category-nav {
+            width: 80px;
+            background-color: #f7f7f7;
+            overflow-y: auto;
+        }
+        
+        .category-item {
+            padding: 15px 0;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
+        }
+        
+        .category-item.active {
+            background-color: #fff;
+            color: var(--primary-color);
+            font-weight: bold;
+            position: relative;
+        }
+        
+        .category-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 20px;
+            background-color: var(--primary-color);
+        }
+        
+        /* 右侧菜品列表 */
+        .dish-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+        
+        .dish-item {
+            display: flex;
+            padding: 15px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        
+        .dish-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-right: 10px;
+            background-color: #f5f5f5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ccc;
+        }
+        
+        .dish-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .dish-info {
+            flex: 1;
+            position: relative;
+        }
+        
+        .dish-name {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .dish-desc {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 5px;
+        }
+        
+        .dish-sold {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .dish-price-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .dish-price {
+            display: flex;
+            align-items: flex-end;
+        }
+        
+        .current-price {
+            color: var(--price-color);
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .original-price {
+            color: #999;
+            font-size: 12px;
+            text-decoration: line-through;
+            margin-left: 5px;
+        }
+        
+        .add-button {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: var(--price-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        
+        /* 底部结算栏 */
+        .cart-bar {
+            height: 60px;
+            background-color: #fff;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        
+        .cart-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+        }
+        
+        .cart-total {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--price-color);
+        }
+        
+        .checkout-button {
+            padding: 8px 20px;
+            background-color: var(--price-color);
+            color: white;
+            border-radius: 20px;
+            font-size: 16px;
+        }
+        
+        /* 底部导航栏 */
+        .tab-bar {
+            height: 50px;
+            background-color: #fff;
+            border-top: 1px solid #eee;
+            display: flex;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+        
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+        }
+        
+        .tab-item.active {
+            color: var(--price-color);
+        }
+        
+        .tab-icon {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+        
+        /* 元素说明区域 */
+        .annotations {
+            margin-top: 40px;
+        }
+        
+        .annotation-item {
+            margin-bottom: 20px;
+        }
+        
+        .annotation-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+        
+        .annotation-desc {
+            color: var(--text-secondary);
+        }
+        
+        /* 响应式调整 */
+        @media screen and (min-width: 768px) {
+            .content-layout {
+                display: flex;
+                align-items: flex-start;
+            }
+            
+            .phone-container {
+                flex-shrink: 0;
+                margin-right: 40px;
+            }
+            
+            .annotations {
+                flex: 1;
+                margin-top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回原型首页</a>
+        
+        <h1>家宴点菜系统</h1>
+        
+        <div class="preview-title">功能概述</div>
+        <div class="preview-description">
+            家宴点菜系统让用户能够快速选择菜品，规划家庭聚餐的菜单，实现类似餐厅点菜的体验，并自动生成购物清单。
+        </div>
+    </div>
+    <div class="content-layout">
+        <!-- 手机壳 -->
+        <div class="phone-container">
+            <!-- 状态栏 -->
+            <div class="status-bar">
+                <div class="status-time">17:55</div>
+                <div class="status-icons">
+                    <span>5G</span>
+                    <span>71%</span>
+                </div>
+            </div>
+            
+            <!-- 餐厅信息 -->
+            <div class="restaurant-header">
+                <div class="restaurant-logo">
+                    <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHBhdGggZD0iTTIyIDIwdi0yYzAtMi41LTMuMDEtNC41LTYuNS00LjUUzOSAxNS41IDkgMTh2MmgxM20tOS0xMmE0IDQgMCAwIDAgNCAtNGEzLjkxIDMuOTEgMCAwIDAgLTEuMjEgLTIuODNMMTQgNHYxMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDAwIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=" alt="Cuisine">
+                </div>
+                <div class="restaurant-info">
+                    <div class="restaurant-name">家宴菜谱</div>
+                </div>
+            </div>
+            
+            <!-- 快捷操作区 -->
+            <div class="quick-actions">
+                <div class="action-button">
+                    <div class="action-icon">📞</div>
+                    <span>联系商家</span>
+                </div>
+                <div class="action-button">
+                    <div class="action-icon">❤️</div>
+                    <span>收藏</span>
+                </div>
+            </div>
+            
+            <!-- 菜单区域 -->
+            <div class="menu-container">
+                <!-- 左侧分类导航 -->
+                <div class="category-nav">
+                    <div class="category-item active">家常菜(荤)</div>
+                    <div class="category-item">家常菜(素)</div>
+                    <div class="category-item">汤类</div>
+                    <div class="category-item">主食</div>
+                    <div class="category-item">小菜</div>
+                    <div class="category-item">感谢您的打赏</div>
+                </div>
+                
+                <!-- 右侧菜品列表 -->
+                <div class="dish-list">
+                    <!-- 菜品项 -->
+                    <div class="dish-item">
+                        <div class="dish-image">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij7nuqLng63oirE8L3RleHQ+PC9zdmc+" alt="红烧肉">
+                        </div>
+                        <div class="dish-info">
+                            <div class="dish-name">红烧肉</div>
+                            <div class="dish-desc">色香味俱全，肥而不腻的经典家常菜</div>
+                            <div class="dish-sold">点击查看图片来源</div>
+                            <div class="dish-price-area">
+                                <div class="dish-price">
+                                    <div class="current-price">¥0.1</div>
+                                    <div class="original-price">¥29</div>
+                                </div>
+                                <div class="add-button">+</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="dish-item">
+                        <div class="dish-image">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij7ovbvmp43lsI/ngrnotYQ8L3RleHQ+PC9zdmc+" alt="辣椒小炒肉">
+                        </div>
+                        <div class="dish-info">
+                            <div class="dish-name">辣椒小炒肉</div>
+                            <div class="dish-desc">湘菜经典，香辣可口</div>
+                            <div class="dish-sold">已售:0</div>
+                            <div class="dish-price-area">
+                                <div class="dish-price">
+                                    <div class="current-price">¥0.1</div>
+                                    <div class="original-price">¥29</div>
+                                </div>
+                                <div class="add-button">+</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="dish-item">
+                        <div class="dish-image">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij7lj6/kuZnpsbznv7A8L3RleHQ+PC9zdmc+" alt="可乐鸡翅">
+                        </div>
+                        <div class="dish-info">
+                            <div class="dish-name">可乐鸡翅</div>
+                            <div class="dish-desc">甜咸适中，鸡翅酥软多汁</div>
+                            <div class="dish-sold">已售:0</div>
+                            <div class="dish-price-area">
+                                <div class="dish-price">
+                                    <div class="current-price">¥0.1</div>
+                                    <div class="original-price">¥49</div>
+                                </div>
+                                <div class="add-button">+</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="dish-item">
+                        <div class="dish-image">
+                            <img src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMDAgMjAwIj48cmVjdCB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgZmlsbD0iI2YwZjBmMCIvPjx0ZXh0IHg9IjEwMCIgeT0iMTAwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGR5PSIuM2VtIiBmaWxsPSIjOTk5Ij7lsI/nhZvpu4TniZnogYw8L3RleHQ+PC9zdmc+" alt="小炒黄牛肉">
+                        </div>
+                        <div class="dish-info">
+                            <div class="dish-name">小炒黄牛肉</div>
+                            <div class="dish-desc">牛肉嫩滑，口感鲜美</div>
+                            <div class="dish-sold">已售:0</div>
+                            <div class="dish-price-area">
+                                <div class="dish-price">
+                                    <div class="current-price">¥0.1</div>
+                                    <div class="original-price">¥49</div>
+                                </div>
+                                <div class="add-button">+</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 底部结算栏 -->
+            <div class="cart-bar">
+                <div class="cart-info">
+                    <div class="cart-total">合计:¥0</div>
+                </div>
+                <div class="checkout-button">去结算</div>
+            </div>
+            
+            <!-- 底部Tab栏 -->
+            <div class="tab-bar" style="display:none;">
+                <div class="tab-item active">
+                    <div class="tab-icon">🏠</div>
+                    <div>首页</div>
+                </div>
+                <div class="tab-item">
+                    <div class="tab-icon">🛒</div>
+                    <div>购物车</div>
+                </div>
+                <div class="tab-item">
+                    <div class="tab-icon">💬</div>
+                    <div>消息</div>
+                </div>
+                <div class="tab-item">
+                    <div class="tab-icon">👤</div>
+                    <div>我的</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 元素说明区域 -->
+        <div class="annotations">
+            <div class="annotation-item">
+                <div class="annotation-title">点菜系统概述</div>
+                <div class="annotation-desc">
+                    点菜系统模仿餐厅点菜的体验，但针对家宴场景进行了优化。用户可以通过分类浏览菜品，选择想要制作的菜品添加到菜单中，最终生成家宴菜单和购物清单。
+                </div>
+            </div>
+            
+            <div class="annotation-item">
+                <div class="annotation-title">分类导航设计</div>
+                <div class="annotation-desc">
+                    左侧的分类导航按照菜品类型进行分类，包括家常菜(荤)、家常菜(素)、汤类、主食、小菜等，方便用户快速定位到所需菜品类型。分类可以根据家庭烹饪的特点进行个性化定制。
+                </div>
+            </div>
+            
+            <div class="annotation-item">
+                <div class="annotation-title">菜品信息展示</div>
+                <div class="annotation-desc">
+                    每个菜品卡片包含菜品图片、名称、简介、添加按钮等信息。虽然展示了价格信息，但在家宴场景中，这可以代表菜品的估计成本或难度等级，帮助用户进行预算规划。
+                </div>
+            </div>
+            
+            <div class="annotation-item">
+                <div class="annotation-title">菜单与购物清单联动</div>
+                <div class="annotation-desc">
+                    用户添加菜品到菜单后，系统会自动分析所有菜品的食材需求，智能合并相同食材，生成优化后的购物清单。这一功能大大简化了家宴筹备的采购环节。
+                </div>
+            </div>
+            
+            <div class="annotation-item">
+                <div class="annotation-title">结算与共享功能</div>
+                <div class="annotation-desc">
+                    点击"去结算"按钮后，系统会展示最终的菜单和购物清单。用户可以保存这个菜单方案，或分享给家人进行协作讨论和调整。家人可以提出建议或投票选择喜欢的菜品。
+                </div>
+            </div>
+            
+            <div class="annotation-item">
+                <div class="annotation-title">菜品推荐算法</div>
+                <div class="annotation-desc">
+                    系统会根据季节、家庭成员偏好、营养均衡等因素，智能推荐适合的菜品组合。比如建议荤素搭配、保证营养均衡、照顾到老人和孩子的口味需求等。
+                </div>
+            </div>
+            
+            <div class="annotation-item">
+                <div class="annotation-title">交互说明</div>
+                <div class="annotation-desc">
+                    <ul style="padding-left: 20px; margin-top: 10px;">
+                        <li>点击"+"按钮：将菜品添加到菜单</li>
+                        <li>点击分类标签：切换菜品分类</li>
+                        <li>点击菜品卡片：查看菜品详情和做法</li>
+                        <li>点击"去结算"：生成最终菜单和购物清单</li>
+                        <li>长按菜品：显示移除和修改数量的选项</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

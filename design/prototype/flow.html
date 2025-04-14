@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>核心流程 - 家宴菜谱小程序原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        
+        :root {
+            --primary-color: #FF9500;
+            --primary-color-light: #FFE4BF;
+            --secondary-color: #4CAF50;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-placeholder: #999999;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F6F6F6;
+            --border-color: #EEEEEE;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: var(--primary-color);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        /* 流程图样式 */
+        .flow-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+        
+        .flow-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+        }
+        
+        .flow-icon {
+            width: 32px;
+            height: 32px;
+            background-color: var(--primary-color-light);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-size: 16px;
+            color: var(--primary-color);
+        }
+        
+        .flow-description {
+            margin-bottom: 30px;
+            color: var(--text-secondary);
+        }
+        
+        /* 流程步骤 */
+        .flow-steps {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .flow-step {
+            display: flex;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 18px;
+            flex-shrink: 0;
+            margin-right: 20px;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .step-description {
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+        
+        .step-screens {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+        
+        .screen-preview {
+            width: 160px;
+            height: 300px;
+            background-color: var(--bg-secondary);
+            border-radius: 15px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            flex-shrink: 0;
+            position: relative;
+        }
+        
+        .screen-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .screen-header {
+            height: 30px;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .screen-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: calc(100% - 30px);
+            color: var(--text-secondary);
+            font-size: 12px;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        /* 连接线 */
+        .flow-steps:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 20px;
+            width: 2px;
+            background-color: var(--border-color);
+            z-index: 1;
+        }
+        
+        /* 最后一步特殊样式 */
+        .flow-step:last-child {
+            margin-bottom: 0;
+        }
+        
+        .flow-step:last-child .step-number {
+            background-color: var(--secondary-color);
+        }
+        
+        /* 页脚 */
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        /* 导航 */
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .navigation a {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: var(--primary-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+        }
+        
+        .navigation a:hover {
+            background-color: #e68600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="navigation">
+            <a href="index.html">首页</a>
+            <a href="flow.html">核心流程</a>
+        </div>
+        
+        <h1>家宴菜谱小程序核心流程</h1>
+        <div class="subtitle">本页面展示家宴菜谱小程序的主要用户流程，帮助了解应用的整体结构和功能关系。</div>
+        
+        <!-- 菜谱创建与分享流程 -->
+        <div class="flow-container">
+            <div class="flow-title">
+                <div class="flow-icon">📝</div>
+                <span>菜谱创建与分享流程</span>
+            </div>
+            
+            <div class="flow-description">
+                用户可以创建个人菜谱，添加详细烹饪步骤、食材清单和烹饪贴士，然后选择私密保存或分享到社区与他人交流。
+            </div>
+            
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">进入"我的菜谱"页面</div>
+                        <div class="step-description">
+                            通过底部导航栏进入"我的菜谱"页面，点击"新建菜谱"按钮开始创建。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">我的菜谱</div>
+                                <div class="screen-content">
+                                    显示用户的菜谱列表和"新建菜谱"按钮
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">填写菜谱信息</div>
+                        <div class="step-description">
+                            输入菜谱名称、简介、上传封面图片，设置烹饪时间、难度和适合人数等基本信息。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">编辑菜谱</div>
+                                <div class="screen-content">
+                                    菜谱基本信息编辑界面，包含名称、简介和封面图片上传区域
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">添加食材清单</div>
+                        <div class="step-description">
+                            添加制作这道菜所需的所有食材和用量，可以灵活调整顺序。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">食材清单</div>
+                                <div class="screen-content">
+                                    食材添加界面，包含食材名称和用量输入框，以及添加/删除按钮
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">编写烹饪步骤</div>
+                        <div class="step-description">
+                            逐步添加详细的烹饪步骤描述和配图，确保步骤清晰易懂。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">烹饪步骤</div>
+                                <div class="screen-content">
+                                    步骤编辑界面，包含步骤描述文本框、图片上传区域和步骤排序功能
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">添加烹饪贴士</div>
+                        <div class="step-description">
+                            分享烹饪技巧、替代食材建议和注意事项，帮助其他用户更好地烹饪。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">烹饪贴士</div>
+                                <div class="screen-content">
+                                    贴士编辑界面，提供文本编辑区域
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">设置分享选项与保存</div>
+                        <div class="step-description">
+                            选择是私密保存还是分享到社区，添加分类标签，然后保存菜谱。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">分享设置</div>
+                                <div class="screen-content">
+                                    分享选项设置界面，包含私密/公开选择和标签选择
+                                </div>
+                            </div>
+                            <div class="screen-preview">
+                                <div class="screen-header">菜谱详情</div>
+                                <div class="screen-content">
+                                    创建完成后的菜谱详情页面
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 家宴点菜到购物清单流程 -->
+        <div class="flow-container">
+            <div class="flow-title">
+                <div class="flow-icon">🍽️</div>
+                <span>家宴点菜到购物清单流程</span>
+            </div>
+            
+            <div class="flow-description">
+                用户可以规划家庭聚餐菜单，从菜谱库中选择菜品，系统自动生成采购清单，简化家宴筹备流程。
+            </div>
+            
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">进入点菜系统</div>
+                        <div class="step-description">
+                            通过底部导航栏进入"点菜"页面，开始规划家宴菜单。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">点菜系统</div>
+                                <div class="screen-content">
+                                    点菜系统主页面，显示日历和已安排的菜单
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">选择日期和餐次</div>
+                        <div class="step-description">
+                            在日历中选择计划举办家宴的日期，并选择相应的餐次（早餐、午餐或晚餐）。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">选择日期</div>
+                                <div class="screen-content">
+                                    日历界面，用户可选择日期和餐次
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">添加菜品</div>
+                        <div class="step-description">
+                            点击"添加菜品"按钮，从我的菜谱或社区菜谱中选择要烹饪的菜品。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">添加菜品</div>
+                                <div class="screen-content">
+                                    菜品选择界面，显示可选的菜谱列表
+                                </div>
+                            </div>
+                            <div class="screen-preview">
+                                <div class="screen-header">已选菜品</div>
+                                <div class="screen-content">
+                                    显示已添加到菜单的菜品卡片
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">邀请家人协作</div>
+                        <div class="step-description">
+                            可选择邀请家庭成员参与点菜，共同决定家宴菜单。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">家庭协作</div>
+                                <div class="screen-content">
+                                    家庭成员列表和邀请界面
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">生成购物清单</div>
+                        <div class="step-description">
+                            点击悬浮按钮，系统自动根据已选菜品生成食材购物清单，智能合并相同食材。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">购物清单</div>
+                                <div class="screen-content">
+                                    自动生成的购物清单，显示食材分类和用量
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">管理购物清单</div>
+                        <div class="step-description">
+                            标记已购买的食材，添加额外物品，分享给家人，设置提醒。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">管理清单</div>
+                                <div class="screen-content">
+                                    购物清单管理界面，显示购买状态和分享选项
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 社区浏览与互动流程 -->
+        <div class="flow-container">
+            <div class="flow-title">
+                <div class="flow-icon">👥</div>
+                <span>社区浏览与互动流程</span>
+            </div>
+            
+            <div class="flow-description">
+                用户可以在社区中发现新菜谱，与其他用户交流烹饪心得，收藏喜欢的菜谱到个人菜谱库。
+            </div>
+            
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">进入社区页面</div>
+                        <div class="step-description">
+                            通过底部导航栏进入"社区"页面，浏览热门和推荐的菜谱。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">社区</div>
+                                <div class="screen-content">
+                                    社区主页，显示热门菜谱和分类标签
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">搜索和筛选</div>
+                        <div class="step-description">
+                            使用搜索框查找特定菜谱，或通过分类标签筛选感兴趣的菜系。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">搜索</div>
+                                <div class="screen-content">
+                                    搜索结果页面，显示匹配的菜谱
+                                </div>
+                            </div>
+                            <div class="screen-preview">
+                                <div class="screen-header">分类</div>
+                                <div class="screen-content">
+                                    分类筛选后的菜谱列表
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">查看菜谱详情</div>
+                        <div class="step-description">
+                            点击感兴趣的菜谱卡片，进入菜谱详情页面查看完整内容。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">菜谱详情</div>
+                                <div class="screen-content">
+                                    菜谱详情页，显示食材、步骤和烹饪贴士
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">收藏菜谱</div>
+                        <div class="step-description">
+                            喜欢的菜谱可以收藏到个人菜谱库，方便日后查看和使用。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">收藏</div>
+                                <div class="screen-content">
+                                    收藏确认界面，可选择收藏到的分类
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">评分和评论</div>
+                        <div class="step-description">
+                            用户可以对菜谱进行评分和评论，分享烹饪体验和改进建议。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">评分</div>
+                                <div class="screen-content">
+                                    评分和评论界面
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flow-step">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">分享菜谱</div>
+                        <div class="step-description">
+                            将喜欢的菜谱分享给朋友或添加到点菜单。
+                        </div>
+                        <div class="step-screens">
+                            <div class="screen-preview">
+                                <div class="screen-header">分享</div>
+                                <div class="screen-content">
+                                    分享选项界面，包括微信分享和添加到点菜单
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>家宴菜谱小程序原型 © 2023 | 设计文档</p>
+        </div>
+    </div>
+</body>
+</html> 

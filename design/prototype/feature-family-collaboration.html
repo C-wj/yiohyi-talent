@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>家庭协作点菜功能 - 亿数易</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 414px;
+            margin: 0 auto;
+            background-color: #fff;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #FF9500, #FF5E3A);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-bottom-left-radius: 15px;
+            border-bottom-right-radius: 15px;
+            position: relative;
+        }
+        
+        .back-button {
+            position: absolute;
+            left: 15px;
+            top: 20px;
+            font-size: 18px;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .feature-intro {
+            padding: 20px;
+            background-color: white;
+            margin: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .feature-intro h2 {
+            font-size: 18px;
+            color: #FF6B00;
+            margin-bottom: 15px;
+            position: relative;
+            padding-left: 15px;
+        }
+        
+        .feature-intro h2:before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 3px;
+            height: 18px;
+            width: 4px;
+            background: #FF6B00;
+            border-radius: 2px;
+        }
+        
+        .feature-intro p {
+            font-size: 15px;
+            line-height: 1.6;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .feature-highlights {
+            padding: 0 20px 20px;
+        }
+        
+        .highlight-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .highlight-card h3 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .highlight-card h3 span {
+            background: #FF6B00;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        
+        .highlight-card p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .demo-section {
+            padding: 0 20px 20px;
+        }
+        
+        .demo-image {
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+        
+        .demo-image img {
+            width: 100%;
+            display: block;
+        }
+        
+        .demo-caption {
+            font-size: 13px;
+            color: #999;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .feature-steps {
+            background: #FFF9F5;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 0 20px 20px;
+        }
+        
+        .step-item {
+            display: flex;
+            margin-bottom: 15px;
+        }
+        
+        .step-number {
+            width: 25px;
+            height: 25px;
+            background: #FF6B00;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            margin-right: 10px;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            flex: 1;
+        }
+        
+        .step-content h4 {
+            font-size: 15px;
+            margin-bottom: 5px;
+        }
+        
+        .step-content p {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.5;
+        }
+        
+        .family-member {
+            display: flex;
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        
+        .member-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f0f0f0;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-weight: bold;
+        }
+        
+        .member-info {
+            flex: 1;
+        }
+        
+        .member-name {
+            font-size: 15px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        
+        .member-pref {
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .footer {
+            padding: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: #999;
+            background: white;
+            border-top: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="back-button">＜</div>
+            <h1>家庭协作点菜功能</h1>
+            <p>让全家人共同参与到菜谱选择中</p>
+        </div>
+        
+        <div class="feature-intro">
+            <h2>功能介绍</h2>
+            <p>在家庭聚餐中，每个人的口味偏好和饮食需求各不相同。我们的家庭协作点菜功能让每位家庭成员都能参与到菜单规划中，让家庭聚餐成为一次民主、愉快的体验。</p>
+            <p>通过微信群的分享链接或者家庭成员邀请码，所有家庭成员都可以参与投票、推荐菜品以及表达自己的饮食偏好和限制。</p>
+        </div>
+        
+        <div class="feature-highlights">
+            <div class="highlight-card">
+                <h3><span>1</span>全家共同决策</h3>
+                <p>每位家庭成员都能通过投票系统参与菜品选择，表达个人喜好，避免了单人决策可能导致的菜品偏向性。</p>
+            </div>
+            
+            <div class="highlight-card">
+                <h3><span>2</span>个性化偏好记录</h3>
+                <p>系统会记录每位成员的饮食偏好、过敏原和限制，在推荐菜品时自动考虑这些因素，确保所选菜品适合全家人。</p>
+            </div>
+            
+            <div class="highlight-card">
+                <h3><span>3</span>平衡营养搭配</h3>
+                <p>根据家庭成员的年龄、健康需求自动推荐营养均衡的菜单组合，确保家庭饮食健康科学。</p>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2 style="font-size: 18px; color: #333; margin-bottom: 15px; text-align: center;">功能演示</h2>
+            <div class="demo-image">
+                <!-- 图片占位符 -->
+                <svg width="100%" height="200" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="100%" height="100%" fill="#f0f0f0"/>
+                    <text x="50%" y="50%" fill="#999" text-anchor="middle" dy=".3em" font-size="16">家庭协作点菜界面展示</text>
+                </svg>
+            </div>
+            <p class="demo-caption">家庭成员可以共同参与菜单决策，表达个人偏好和需求</p>
+        </div>
+        
+        <div class="feature-steps">
+            <h2 style="font-size: 18px; color: #333; margin-bottom: 15px;">使用步骤</h2>
+            
+            <div class="step-item">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h4>创建家庭群组</h4>
+                    <p>主要成员创建家庭群组，设置家庭名称和基本信息</p>
+                </div>
+            </div>
+            
+            <div class="step-item">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h4>邀请家庭成员</h4>
+                    <p>通过微信群分享链接或邀请码邀请家人加入</p>
+                </div>
+            </div>
+            
+            <div class="step-item">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h4>设置个人偏好</h4>
+                    <p>每位成员设置个人口味偏好、饮食禁忌和营养需求</p>
+                </div>
+            </div>
+            
+            <div class="step-item">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h4>参与菜品投票</h4>
+                    <p>对推荐菜品进行投票，也可以自行推荐新菜品</p>
+                </div>
+            </div>
+            
+            <div class="step-item">
+                <div class="step-number">5</div>
+                <div class="step-content">
+                    <h4>生成最终菜单</h4>
+                    <p>系统根据投票结果和各成员偏好自动生成平衡的最终菜单</p>
+                </div>
+            </div>
+        </div>
+        
+        <div style="padding: 0 20px 20px;">
+            <h2 style="font-size: 18px; color: #333; margin-bottom: 15px;">家庭成员示例</h2>
+            
+            <div class="family-member">
+                <div class="member-avatar">爷</div>
+                <div class="member-info">
+                    <div class="member-name">爷爷</div>
+                    <div class="member-pref">低盐饮食，喜欢传统菜式</div>
+                </div>
+            </div>
+            
+            <div class="family-member">
+                <div class="member-avatar">奶</div>
+                <div class="member-info">
+                    <div class="member-name">奶奶</div>
+                    <div class="member-pref">喜欢清淡口味，不吃辣</div>
+                </div>
+            </div>
+            
+            <div class="family-member">
+                <div class="member-avatar">父</div>
+                <div class="member-info">
+                    <div class="member-name">爸爸</div>
+                    <div class="member-pref">喜欢肉类，重口味</div>
+                </div>
+            </div>
+            
+            <div class="family-member">
+                <div class="member-avatar">母</div>
+                <div class="member-info">
+                    <div class="member-name">妈妈</div>
+                    <div class="member-pref">注重健康，喜欢蔬菜</div>
+                </div>
+            </div>
+            
+            <div class="family-member">
+                <div class="member-avatar">子</div>
+                <div class="member-info">
+                    <div class="member-name">小明</div>
+                    <div class="member-pref">挑食，不喜欢青椒，喜欢甜食</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            亿数易 © 2024 - 让家庭聚餐更加和谐美满
+        </div>
+    </div>
+</body>
+</html> 

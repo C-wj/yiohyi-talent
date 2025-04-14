@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社区菜谱页 - 家宴菜谱小程序原型</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        
+        :root {
+            --primary-color: #FF9500;
+            --primary-color-light: #FFE4BF;
+            --secondary-color: #4CAF50;
+            --text-primary: #333333;
+            --text-secondary: #666666;
+            --text-placeholder: #999999;
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F6F6F6;
+            --border-color: #EEEEEE;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--text-primary);
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: var(--primary-color);
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        
+        h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .preview-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .preview-description {
+            margin-bottom: 30px;
+            color: var(--text-secondary);
+        }
+        
+        /* 手机壳样式 */
+        .phone-container {
+            width: 375px;
+            height: 812px;
+            background-color: #fff;
+            border-radius: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            position: relative;
+            margin: 0 auto 40px;
+            border: 10px solid #333;
+        }
+        
+        /* 手机顶部状态栏 */
+        .status-bar {
+            height: 44px;
+            background-color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            position: relative;
+        }
+        
+        /* 手机内容区域 */
+        .phone-content {
+            height: calc(100% - 44px - 50px);
+            overflow-y: auto;
+            background-color: var(--bg-secondary);
+        }
+        
+        /* 搜索栏 */
+        .search-bar {
+            padding: 10px 15px;
+            background-color: var(--primary-color);
+        }
+        
+        .search-input {
+            background-color: #fff;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            padding: 8px 15px;
+        }
+        
+        .search-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            background-color: #ddd;
+            border-radius: 50%;
+        }
+        
+        .search-placeholder {
+            color: var(--text-placeholder);
+        }
+        
+        /* 分类标签 */
+        .category-tabs {
+            display: flex;
+            padding: 15px 10px;
+            overflow-x: auto;
+            background-color: white;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .category-tab {
+            padding: 8px 16px;
+            margin-right: 10px;
+            background-color: var(--bg-secondary);
+            border-radius: 16px;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+        
+        .category-tab.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        /* 轮播图 */
+        .swiper-container {
+            height: 160px;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+        
+        .swiper-slide {
+            width: 100%;
+            height: 100%;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            background-image: linear-gradient(120deg, #FF9500, #FF6B00);
+        }
+        
+        .swiper-pagination {
+            position: absolute;
+            bottom: 10px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .swiper-pagination-bullet {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            margin: 0 3px;
+        }
+        
+        .swiper-pagination-bullet.active {
+            background-color: white;
+        }
+        
+        /* 热门菜谱标题 */
+        .section-title {
+            padding: 15px;
+            font-weight: bold;
+            font-size: 16px;
+            background-color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .section-more {
+            color: var(--primary-color);
+            font-size: 13px;
+            font-weight: normal;
+        }
+        
+        /* 菜谱列表 - 瀑布流 */
+        .recipe-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 10px;
+            background-color: var(--bg-secondary);
+        }
+        
+        .recipe-card {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .recipe-image {
+            width: 100%;
+            height: 120px;
+            background-color: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 12px;
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .recipe-info {
+            padding: 10px;
+        }
+        
+        .recipe-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            line-height: 1.3;
+        }
+        
+        .recipe-meta {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .recipe-author {
+            display: flex;
+            align-items: center;
+        }
+        
+        .author-avatar {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background-color: #ddd;
+            margin-right: 4px;
+        }
+        
+        .recipe-stats {
+            margin-left: auto;
+            display: flex;
+        }
+        
+        .recipe-likes {
+            margin-left: 5px;
+        }
+        
+        /* 底部导航栏 */
+        .tab-bar {
+            height: 50px;
+            background-color: white;
+            display: flex;
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .tab-icon {
+            width: 24px;
+            height: 24px;
+            background-color: #ddd;
+            border-radius: 50%;
+            margin-bottom: 2px;
+        }
+        
+        .tab-item.active {
+            color: var(--primary-color);
+        }
+        
+        .tab-item.active .tab-icon {
+            background-color: var(--primary-color);
+        }
+        
+        /* 元素说明区域 */
+        .annotations {
+            margin-top: 40px;
+        }
+        
+        .annotation-item {
+            margin-bottom: 20px;
+        }
+        
+        .annotation-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: var(--primary-color);
+        }
+        
+        .annotation-desc {
+            color: var(--text-secondary);
+        }
+        
+        /* 响应式调整 */
+        @media screen and (min-width: 768px) {
+            .content-layout {
+                display: flex;
+                align-items: flex-start;
+            }
+            
+            .phone-container {
+                flex-shrink: 0;
+                margin-right: 40px;
+            }
+            
+            .annotations {
+                flex: 1;
+                margin-top: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← 返回原型首页</a>
+        
+        <h1>社区菜谱页</h1>
+        
+        <div class="preview-title">功能概述</div>
+        <div class="preview-description">
+            社区菜谱页是用户发现新菜谱的主要入口，展示热门和推荐的菜谱内容，用户可以搜索、浏览和筛选感兴趣的菜谱。
+        </div>
+        
+        <div class="content-layout">
+            <!-- 手机壳 -->
+            <div class="phone-container">
+                <!-- 状态栏 -->
+                <div class="status-bar">社区菜谱</div>
+                
+                <!-- 内容区域 -->
+                <div class="phone-content">
+                    <!-- 搜索栏 -->
+                    <div class="search-bar">
+                        <div class="search-input">
+                            <div class="search-icon"></div>
+                            <div class="search-placeholder">搜索菜谱、食材</div>
+                        </div>
+                    </div>
+                    
+                    <!-- 分类标签 -->
+                    <div class="category-tabs">
+                        <div class="category-tab active">推荐</div>
+                        <div class="category-tab">家常菜</div>
+                        <div class="category-tab">快手菜</div>
+                        <div class="category-tab">素食</div>
+                        <div class="category-tab">川菜</div>
+                        <div class="category-tab">粤菜</div>
+                        <div class="category-tab">早餐</div>
+                    </div>
+                    
+                    <!-- 轮播图 -->
+                    <div class="swiper-container">
+                        <div class="swiper-slide">夏季清凉菜品推荐</div>
+                        <div class="swiper-pagination">
+                            <span class="swiper-pagination-bullet active"></span>
+                            <span class="swiper-pagination-bullet"></span>
+                            <span class="swiper-pagination-bullet"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- 热门菜谱 -->
+                    <div class="section-title">
+                        <span>热门菜谱</span>
+                        <span class="section-more">更多 ></span>
+                    </div>
+                    
+                    <!-- 菜谱列表 -->
+                    <div class="recipe-list">
+                        <!-- 菜谱卡片1 -->
+                        <div class="recipe-card">
+                            <div class="recipe-image" style="background-color: #FFC107;">红烧排骨</div>
+                            <div class="recipe-info">
+                                <div class="recipe-title">家常红烧排骨</div>
+                                <div class="recipe-meta">
+                                    <div class="recipe-author">
+                                        <div class="author-avatar"></div>
+                                        <span>厨艺达人</span>
+                                    </div>
+                                    <div class="recipe-stats">
+                                        <span class="recipe-likes">❤️ 256</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 菜谱卡片2 -->
+                        <div class="recipe-card">
+                            <div class="recipe-image" style="background-color: #4CAF50;">清蒸鲈鱼</div>
+                            <div class="recipe-info">
+                                <div class="recipe-title">粤式清蒸鲈鱼</div>
+                                <div class="recipe-meta">
+                                    <div class="recipe-author">
+                                        <div class="author-avatar"></div>
+                                        <span>鱼香厨房</span>
+                                    </div>
+                                    <div class="recipe-stats">
+                                        <span class="recipe-likes">❤️ 189</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 菜谱卡片3 -->
+                        <div class="recipe-card">
+                            <div class="recipe-image" style="background-color: #F44336;">麻婆豆腐</div>
+                            <div class="recipe-info">
+                                <div class="recipe-title">正宗川味麻婆豆腐</div>
+                                <div class="recipe-meta">
+                                    <div class="recipe-author">
+                                        <div class="author-avatar"></div>
+                                        <span>川菜师傅</span>
+                                    </div>
+                                    <div class="recipe-stats">
+                                        <span class="recipe-likes">❤️ 312</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 菜谱卡片4 -->
+                        <div class="recipe-card">
+                            <div class="recipe-image" style="background-color: #9C27B0;">蔬菜沙拉</div>
+                            <div class="recipe-info">
+                                <div class="recipe-title">夏日轻食蔬菜沙拉</div>
+                                <div class="recipe-meta">
+                                    <div class="recipe-author">
+                                        <div class="author-avatar"></div>
+                                        <span>轻食主义</span>
+                                    </div>
+                                    <div class="recipe-stats">
+                                        <span class="recipe-likes">❤️ 145</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 菜谱卡片5 -->
+                        <div class="recipe-card">
+                            <div class="recipe-image" style="background-color: #00BCD4;">西红柿炒蛋</div>
+                            <div class="recipe-info">
+                                <div class="recipe-title">家常西红柿炒蛋</div>
+                                <div class="recipe-meta">
+                                    <div class="recipe-author">
+                                        <div class="author-avatar"></div>
+                                        <span>家常菜达人</span>
+                                    </div>
+                                    <div class="recipe-stats">
+                                        <span class="recipe-likes">❤️ 426</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 菜谱卡片6 -->
+                        <div class="recipe-card">
+                            <div class="recipe-image" style="background-color: #FF5722;">糖醋里脊</div>
+                            <div class="recipe-info">
+                                <div class="recipe-title">外酥里嫩糖醋里脊</div>
+                                <div class="recipe-meta">
+                                    <div class="recipe-author">
+                                        <div class="author-avatar"></div>
+                                        <span>美食厨房</span>
+                                    </div>
+                                    <div class="recipe-stats">
+                                        <span class="recipe-likes">❤️ 278</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 底部导航栏 -->
+                <div class="tab-bar">
+                    <div class="tab-item active">
+                        <div class="tab-icon"></div>
+                        <div>社区</div>
+                    </div>
+                    <div class="tab-item">
+                        <div class="tab-icon"></div>
+                        <div>我的菜谱</div>
+                    </div>
+                    <div class="tab-item">
+                        <div class="tab-icon"></div>
+                        <div>点菜</div>
+                    </div>
+                    <div class="tab-item">
+                        <div class="tab-icon"></div>
+                        <div>我的</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 元素说明区域 -->
+            <div class="annotations">
+                <div class="annotation-item">
+                    <div class="annotation-title">搜索栏</div>
+                    <div class="annotation-desc">
+                        在搜索栏中，用户可以通过关键词搜索感兴趣的菜谱，支持按菜名、食材或标签搜索。搜索框始终置顶固定，便于随时搜索。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">分类标签</div>
+                    <div class="annotation-desc">
+                        用户可以通过水平滑动浏览不同的菜谱分类，包括推荐、家常菜、快手菜等多个分类。点击标签可以筛选对应分类的菜谱。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">轮播图</div>
+                    <div class="annotation-desc">
+                        轮播图区域展示当季推荐、活动专题或热门话题，用户可以点击进入相应的专题页面，帮助发现新的烹饪灵感。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">热门菜谱</div>
+                    <div class="annotation-desc">
+                        热门菜谱区域采用瀑布流布局，展示社区中受欢迎的菜谱。每个菜谱卡片包含菜名、作者信息和点赞数量，点击卡片可进入菜谱详情页。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">底部导航栏</div>
+                    <div class="annotation-desc">
+                        底部导航栏固定在屏幕底部，提供四个主要功能入口：社区、我的菜谱、点菜和个人中心，方便用户在不同功能模块间快速切换。
+                    </div>
+                </div>
+                
+                <div class="annotation-item">
+                    <div class="annotation-title">交互说明</div>
+                    <div class="annotation-desc">
+                        <ul style="padding-left: 20px; margin-top: 10px;">
+                            <li>下拉刷新：在列表页面下拉可刷新内容，获取最新菜谱</li>
+                            <li>上拉加载：滑动到列表底部时，自动加载更多菜谱</li>
+                            <li>分类切换：点击分类标签，动态加载对应分类的菜谱</li>
+                            <li>菜谱详情：点击菜谱卡片，进入菜谱详情页</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
