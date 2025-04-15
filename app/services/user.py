@@ -5,7 +5,7 @@ from bson import ObjectId
 
 from app.core.exceptions import NotFoundError, DatabaseError
 from app.db.mongodb import get_collection, USERS_COLLECTION
-from app.models.user import User, UserProfile, DietaryPreference, Gender
+from app.models.user import User, UserProfile, Gender
 from app.schemas.user import UserCreate, UserUpdate
 
 

@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
+# 导入所有路由模块
 from app.api.v1 import auth, users, families, recipes, menu_plans, shopping_lists, ingredients, uploads
 from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
@@ -62,7 +63,7 @@ app.add_middleware(
 )
 
 
-# 添加路由
+# 添加所有路由
 app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["认证"])
 app.include_router(users.router, prefix=f"{settings.API_PREFIX}/users", tags=["用户"])
 app.include_router(families.router, prefix=f"{settings.API_PREFIX}/families", tags=["家庭"])

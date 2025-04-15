@@ -1,11 +1,12 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from bson import ObjectId
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 
 from app.db.mongodb import USERS_COLLECTION
+from app.models.common import PyObjectId
 
 
 class Gender(str, Enum):
@@ -22,29 +23,138 @@ class UserRole(str, Enum):
     SUPER_ADMIN = "super_admin"  # 超级管理员
 
 
+class UserPreferences(BaseModel):
+    dietary: List[str] = Field(default_factory=list)  # 饮食偏好
+    allergies: List[str] = Field(default_factory=list)  # 过敏原
+    favoriteCuisines: List[str] = Field(default_factory=list)  # 喜好菜系
+    dislikedIngredients: List[str] = Field(default_factory=list)  # 不喜欢的食材
+
+
 class UserProfile(BaseModel):
-    """用户个人资料"""
     nickname: str
     avatar: Optional[str] = None
-    gender: Gender = Gender.UNKNOWN
     bio: Optional[str] = None
-
-
-class DietaryPreference(BaseModel):
-    """饮食偏好"""
-    dietary: List[str] = []           # 饮食习惯，如"素食"、"低脂"
-    allergies: List[str] = []          # 过敏原，如"花生"、"海鲜"
-    favorite_cuisines: List[str] = []  # 喜好的菜系
-    disliked_ingredients: List[str] = [] # 不喜欢的食材
+    gender: Optional[str] = None
+    location: Optional[str] = None
 
 
 class UserStats(BaseModel):
-    """用户统计数据"""
-    recipe_count: int = 0
-    favorite_count: int = 0
-    order_count: int = 0
-    followers_count: int = 0
-    following_count: int = 0
+    recipeCount: int = 0  # 创建的菜谱数
+    favoriteCount: int = 0  # 收藏的菜谱数
+    orderCount: int = 0  # 创建的点菜订单数
+    followersCount: int = 0  # 粉丝数
+    followingCount: int = 0  # 关注数
+
+
+class UserSettings(BaseModel):
+    notification: bool = True  # 通知设置
+    privacy: str = "public"  # 隐私设置:'public','friends','private'
+    theme: str = "light"  # 主题设置:'light','dark'
+
+
+class UserBase(BaseModel):
+    """用户基础模型"""
+    username: str
+    email: EmailStr
+    avatarUrl: Optional[str] = None
+    nickname: Optional[str] = None
+    bio: Optional[str] = None
+    gender: Optional[str] = None
+    birthday: Optional[datetime] = None
+    location: Optional[str] = None
+    phone: Optional[str] = None
+    isActive: bool = True
+    isVerified: bool = False
+
+
+class UserCreate(UserBase):
+    """用户创建模型"""
+    password: str
+
+    @validator('password')
+    def password_validation(cls, v):
+        if len(v) < 8:
+            raise ValueError('密码长度至少为8位')
+        if not any(char.isdigit() for char in v):
+            raise ValueError('密码必须包含至少一个数字')
+        if not any(char.isupper() for char in v):
+            raise ValueError('密码必须包含至少一个大写字母')
+        return v
+
+
+class UserUpdate(BaseModel):
+    """用户更新模型"""
+    email: Optional[EmailStr] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    avatarUrl: Optional[str] = None
+    nickname: Optional[str] = None
+    bio: Optional[str] = None
+    gender: Optional[str] = None
+    birthday: Optional[datetime] = None
+    location: Optional[str] = None
+    phone: Optional[str] = None
+    isActive: Optional[bool] = None
+    isVerified: Optional[bool] = None
+
+
+class UserInDB(UserBase):
+    """数据库中的用户模型"""
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    passwordHash: str
+    createdAt: datetime = Field(default_factory=datetime.utcnow)
+    updatedAt: Optional[datetime] = None
+    lastLoginAt: Optional[datetime] = None
+    favorites: List[str] = []
+    following: List[str] = []
+    followers: List[str] = []
+
+    class Config:
+        schema_extra = {
+            "example": {
+                "_id": "60d21b4967d0d8992e610c85",
+                "username": "user123",
+                "email": "user@example.com",
+                "avatarUrl": "https://example.com/avatar.jpg",
+                "nickname": "User Nick",
+                "bio": "About me",
+                "gender": "male",
+                "birthday": "1990-01-01T00:00:00",
+                "location": "New York",
+                "phone": "1234567890",
+                "passwordHash": "hashed_password",
+                "isActive": True,
+                "isVerified": False,
+                "createdAt": "2023-01-01T00:00:00",
+                "updatedAt": "2023-01-02T00:00:00",
+                "lastLoginAt": "2023-01-03T00:00:00",
+                "favorites": ["60d21b4967d0d8992e610c86"],
+                "following": ["60d21b4967d0d8992e610c87"],
+                "followers": ["60d21b4967d0d8992e610c88"]
+            }
+        }
+
+
+class UserResponse(UserBase):
+    """用户响应模型"""
+    id: str = Field(..., alias="_id")
+    createdAt: datetime
+    updatedAt: Optional[datetime] = None
+
+    class Config:
+        allow_population_by_field_name = True
+
+
+class Token(BaseModel):
+    """访问令牌模型"""
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    """令牌数据模型"""
+    sub: str
+    exp: Optional[int] = None
 
 
 class User(BaseModel):
@@ -54,8 +164,9 @@ class User(BaseModel):
     unionid: Optional[str] = None     # 微信unionid(如适用)
     
     profile: UserProfile              # 个人资料
-    preferences: Optional[DietaryPreference] = None  # 饮食偏好
+    preferences: UserPreferences = Field(default_factory=UserPreferences)  # 饮食偏好
     stats: UserStats = UserStats()    # 统计数据
+    settings: UserSettings = UserSettings()  # 设置
     
     roles: List[UserRole] = [UserRole.USER]  # 用户角色
     is_active: bool = True            # 是否激活
@@ -84,21 +195,26 @@ class User(BaseModel):
                 "preferences": {
                     "dietary": ["低脂", "少盐"],
                     "allergies": ["海鲜"],
-                    "favorite_cuisines": ["川菜", "粤菜"],
-                    "disliked_ingredients": ["香菜"]
+                    "favoriteCuisines": ["川菜", "粤菜"],
+                    "dislikedIngredients": ["香菜"]
                 },
                 "stats": {
-                    "recipe_count": 12,
-                    "favorite_count": 45,
-                    "order_count": 8,
-                    "followers_count": 20,
-                    "following_count": 15
+                    "recipeCount": 12,
+                    "favoriteCount": 45,
+                    "orderCount": 8,
+                    "followersCount": 20,
+                    "followingCount": 15
+                },
+                "settings": {
+                    "notification": True,
+                    "privacy": "public",
+                    "theme": "light"
                 },
                 "roles": ["user"],
                 "is_active": True,
                 "is_verified": True,
-                "created_at": "2023-01-01T12:00:00",
-                "updated_at": "2023-05-10T15:30:00",
-                "last_login": "2023-05-15T09:20:00"
+                "createdAt": "2023-01-01T12:00:00",
+                "updatedAt": "2023-05-10T15:30:00",
+                "lastLoginAt": "2023-05-15T09:20:00"
             }
         } 
