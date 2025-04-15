@@ -14,17 +14,24 @@ from app.db.mongodb import connect_to_mongo, close_mongo_connection
 # 应用启动和关闭事件处理
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 启动事件: 连接数据库
-    logging.info("连接到MongoDB...")
-    await connect_to_mongo()
-    logging.info("MongoDB连接成功!")
+    # 启动事件: 尝试连接数据库，但不阻止应用启动
+    logging.info("尝试连接到MongoDB...")
+    try:
+        await connect_to_mongo()
+        logging.info("MongoDB连接成功!")
+    except Exception as e:
+        logging.error(f"MongoDB连接失败: {str(e)}")
+        logging.warning("应用将以有限功能模式启动，API可能无法正常工作")
     
     yield  # 应用运行中
     
     # 关闭事件: 断开数据库连接
-    logging.info("关闭MongoDB连接...")
-    await close_mongo_connection()
-    logging.info("MongoDB连接已关闭!")
+    try:
+        logging.info("关闭MongoDB连接...")
+        await close_mongo_connection()
+        logging.info("MongoDB连接已关闭!")
+    except Exception as e:
+        logging.error(f"关闭MongoDB连接时出错: {str(e)}")
 
 
 # 初始化FastAPI应用

@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     # 基本配置
     APP_NAME: str = "家宴微信小程序后台服务"
     APP_VERSION: str = "0.1.0"
-    APP_ENV: str = "development"  # development, testing, production
+    # development, testing, production
+    APP_ENV: str = "development"
     DEBUG: bool = True
     SECRET_KEY: str
     API_PREFIX: str = "/api/v1"
@@ -45,9 +46,11 @@ class Settings(BaseSettings):
     
     # 文件存储配置
     UPLOAD_DIR: Path = Path("static/uploads")
-    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
+    # 10MB
+    MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024
     ALLOWED_IMAGE_TYPES: List[str] = ["image/jpeg", "image/png", "image/webp"]
-    UPLOADS_PROVIDER: str = "local"  # local, oss, cos
+    # local, oss, cos
+    UPLOADS_PROVIDER: str = "local"
     
     # 阿里云OSS配置
     OSS_ACCESS_KEY: Optional[str] = None
@@ -105,4 +108,4 @@ settings = Settings()
 
 # 确保关键目录存在
 for dir_path in [settings.UPLOAD_DIR, settings.LOG_DIR]:
-    dir_path.mkdir(parents=True, exist_ok=True) 
+    dir_path.mkdir(parents=True, exist_ok=True)

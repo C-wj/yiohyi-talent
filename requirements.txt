@@ -8,7 +8,7 @@ email-validator==2.0.0
 
 # 身份验证与安全
 python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
+passlib==1.7.4
 python-dotenv==1.0.0
 
 # 数据库
@@ -21,7 +21,7 @@ beanie==1.21.0
 itsdangerous==2.1.2
 
 # 微信API集成
-wechatpy==2.0.0
+wechatpy==1.8.18
 cryptography==41.0.3
 requests==2.31.0
 
