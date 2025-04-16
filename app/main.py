@@ -45,6 +45,21 @@ app = FastAPI(
     redoc_url="/redoc" if settings.DEBUG else None,
 )
 
+# 设置代理头中间件
+@app.middleware("http")
+async def proxy_middleware(request, call_next):
+    if "x-forwarded-proto" in request.headers:
+        request.scope["scheme"] = request.headers["x-forwarded-proto"]
+    
+    if "x-forwarded-host" in request.headers:
+        request.scope["headers"] = [
+            (b"host", request.headers["x-forwarded-host"].encode())
+            if key == b"host" else (key, value)
+            for key, value in request.scope["headers"]
+        ]
+    
+    response = await call_next(request)
+    return response
 
 # 设置CORS中间件
 app.add_middleware(
@@ -63,15 +78,19 @@ app.add_middleware(
 )
 
 
-# 添加所有路由
-app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["认证"])
-app.include_router(users.router, prefix=f"{settings.API_PREFIX}/users", tags=["用户"])
-app.include_router(families.router, prefix=f"{settings.API_PREFIX}/families", tags=["家庭"])
-app.include_router(recipes.router, prefix=f"{settings.API_PREFIX}/recipes", tags=["菜谱"])
-app.include_router(menu_plans.router, prefix=f"{settings.API_PREFIX}/menu-plans", tags=["点菜系统"])
-app.include_router(shopping_lists.router, prefix=f"{settings.API_PREFIX}/shopping-lists", tags=["购物清单"])
-app.include_router(ingredients.router, prefix=f"{settings.API_PREFIX}/ingredients", tags=["食材"])
-app.include_router(uploads.router, prefix=f"{settings.API_PREFIX}/uploads", tags=["文件上传"])
+# 添加所有路由 - 使用try/except处理导入错误
+try:
+    app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["认证"])
+    app.include_router(users.router, prefix=f"{settings.API_PREFIX}/users", tags=["用户"])
+    app.include_router(families.router, prefix=f"{settings.API_PREFIX}/families", tags=["家庭"])
+    app.include_router(recipes.router, prefix=f"{settings.API_PREFIX}/recipes", tags=["菜谱"])
+    app.include_router(menu_plans.router, prefix=f"{settings.API_PREFIX}/menu-plans", tags=["点菜系统"])
+    app.include_router(shopping_lists.router, prefix=f"{settings.API_PREFIX}/shopping-lists", tags=["购物清单"])
+    app.include_router(ingredients.router, prefix=f"{settings.API_PREFIX}/ingredients", tags=["食材"])
+    app.include_router(uploads.router, prefix=f"{settings.API_PREFIX}/uploads", tags=["文件上传"])
+except Exception as e:
+    logging.error(f"添加路由时出错: {str(e)}")
+    logging.warning("某些API功能可能不可用")
 
 
 # 健康检查路由
@@ -93,9 +112,17 @@ async def root():
 
 # 直接运行此文件时启动服务器
 if __name__ == "__main__":
-    uvicorn.run(
-        "app.main:app", 
-        host=settings.HOST, 
-        port=settings.PORT,
-        reload=settings.DEBUG
-    ) 
+    # 配置基本日志
+    logging.basicConfig(level=logging.INFO)
+    logging.info(f"启动应用: {settings.APP_NAME} v{settings.APP_VERSION}")
+    
+    # 启动服务器
+    try:
+        uvicorn.run(
+            "app.main:app", 
+            host=settings.HOST, 
+            port=settings.PORT,
+            reload=settings.DEBUG
+        )
+    except Exception as e:
+        logging.error(f"启动服务器时出错: {str(e)}") 

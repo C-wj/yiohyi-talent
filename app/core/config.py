@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 from typing import List, Optional, Union, Dict, Any
 
-from pydantic import field_validator, AnyHttpUrl
-from pydantic_settings import BaseSettings
+from pydantic import validator, AnyHttpUrl
+from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -78,14 +78,14 @@ class Settings(BaseSettings):
     RATE_LIMIT_ENABLED: bool = True
     RATE_LIMIT_DEFAULT: str = "200/minute"
     
-    @field_validator("UPLOAD_DIR", "LOG_DIR")
+    @validator("UPLOAD_DIR", "LOG_DIR")
     def validate_paths(cls, v: Union[str, Path]) -> Path:
         # 确保路径存在
         path = Path(v) if isinstance(v, str) else v
         path.mkdir(parents=True, exist_ok=True)
         return path
     
-    @field_validator("CORS_ORIGINS")
+    @validator("CORS_ORIGINS")
     def validate_cors_origins(cls, v: List[str]) -> List[str]:
         if v == ["*"]:
             return v

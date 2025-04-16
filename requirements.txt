@@ -30,7 +30,7 @@ celery==5.3.4
 flower==2.0.1
 
 # 图像处理
-Pillow==10.0.1
+Pillow
 
 # 工具与辅助库
 pydantic-settings==2.0.3
@@ -41,10 +41,9 @@ python-slugify==8.0.1
 gunicorn==21.2.0
 
 # CORS支持
-CORSMiddleware==0.1.2
+# 已删除CORSMiddleware==0.1.2，因为FastAPI已内置CORS中间件
 
 # 性能优化
-orjson==3.9.7
 uvloop==0.17.0 ; sys_platform != 'win32' and implementation_name == 'cpython'
 httptools==0.6.0
 
