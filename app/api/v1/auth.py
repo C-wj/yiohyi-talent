@@ -7,9 +7,12 @@ from app.schemas.user import (
     WechatLoginResponse,
     Token,
     RefreshToken,
-    UserResponse
+    UserResponse,
+    PasswordLoginRequest,
+    SmsRequest,
+    SmsVerifyRequest
 )
-from app.services.auth import wechat_login, refresh_token
+from app.services.auth import wechat_login, refresh_token, password_login, send_sms_code, verify_sms_code
 
 router = APIRouter()
 
@@ -56,6 +59,30 @@ async def login_with_wechat(login_request: WechatLoginRequest):
         )
 
 
+@router.post("/password-login", response_model=Token)
+async def login_with_password(login_request: PasswordLoginRequest):
+    """
+    使用账号密码登录
+    
+    - **account**: 用户账号
+    - **password**: 用户密码
+    """
+    try:
+        token = await password_login(login_request.account, login_request.password)
+        return token
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e.detail),
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"密码登录失败: {str(e)}"
+        )
+
+
 @router.post("/refresh", response_model=Token)
 async def refresh_access_token(refresh_token_req: RefreshToken):
     """
@@ -96,4 +123,45 @@ async def get_current_user_info(current_user: dict = Depends(get_current_user)):
         is_verified=current_user.get("is_verified", False),
         created_at=current_user["created_at"],
         updated_at=current_user["updated_at"]
-    ) 
+    )
+
+
+@router.post("/send-sms", status_code=status.HTTP_200_OK)
+async def send_verification_sms(sms_request: SmsRequest):
+    """
+    发送短信验证码
+    
+    - **phoneNumber**: 手机号码
+    """
+    try:
+        result = await send_sms_code(sms_request.phoneNumber)
+        return {"success": True, "message": "验证码发送成功"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"发送验证码失败: {str(e)}"
+        )
+
+
+@router.post("/verify-sms", response_model=Token)
+async def login_with_sms_code(verify_request: SmsVerifyRequest):
+    """
+    使用短信验证码登录
+    
+    - **phoneNumber**: 手机号码
+    - **code**: 短信验证码
+    """
+    try:
+        token = await verify_sms_code(verify_request.phoneNumber, verify_request.code)
+        return token
+    except AuthenticationError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(e.detail),
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"验证码登录失败: {str(e)}"
+        ) 

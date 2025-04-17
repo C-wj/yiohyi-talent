@@ -7,9 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 # 导入所有路由模块
-from app.api.v1 import auth, users, families, recipes, menu_plans, shopping_lists, ingredients, uploads
+from app.api.v1 import auth, users, families, recipes, menu_plans, shopping_lists, ingredients, uploads, home, services
+from app.api.v1.admin import homepage as admin_homepage
 from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
+from app.db.redis import get_redis, close_redis_connection
 
 
 # 应用启动和关闭事件处理
@@ -24,6 +26,13 @@ async def lifespan(app: FastAPI):
         logging.error(f"MongoDB连接失败: {str(e)}")
         logging.warning("应用将以有限功能模式启动，API可能无法正常工作")
     
+    # 尝试连接Redis
+    try:
+        await get_redis()
+    except Exception as e:
+        logging.error(f"Redis初始化失败: {str(e)}")
+        logging.warning("短信验证码和缓存功能可能无法正常工作")
+    
     yield  # 应用运行中
     
     # 关闭事件: 断开数据库连接
@@ -33,6 +42,12 @@ async def lifespan(app: FastAPI):
         logging.info("MongoDB连接已关闭!")
     except Exception as e:
         logging.error(f"关闭MongoDB连接时出错: {str(e)}")
+    
+    # 关闭Redis连接
+    try:
+        await close_redis_connection()
+    except Exception as e:
+        logging.error(f"关闭Redis连接时出错: {str(e)}")
 
 
 # 初始化FastAPI应用
@@ -72,6 +87,15 @@ app.include_router(menu_plans.router, prefix=f"{settings.API_PREFIX}/menu-plans"
 app.include_router(shopping_lists.router, prefix=f"{settings.API_PREFIX}/shopping-lists", tags=["购物清单"])
 app.include_router(ingredients.router, prefix=f"{settings.API_PREFIX}/ingredients", tags=["食材"])
 app.include_router(uploads.router, prefix=f"{settings.API_PREFIX}/uploads", tags=["文件上传"])
+app.include_router(home.router, prefix=f"{settings.API_PREFIX}/home", tags=["首页"])
+app.include_router(services.router, prefix=f"{settings.API_PREFIX}/services", tags=["服务"])
+
+# 添加管理员路由
+app.include_router(
+    admin_homepage.router, 
+    prefix=f"{settings.API_PREFIX}/admin/homepage", 
+    tags=["管理员-首页"]
+)
 
 
 # 健康检查路由

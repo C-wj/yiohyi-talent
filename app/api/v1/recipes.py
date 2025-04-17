@@ -3,6 +3,7 @@ from typing import List, Optional
 
 from app.api.dependencies import get_current_user
 from app.models.recipe import RecipeCreate, RecipeUpdate, RecipeResponse, RecipeSearchParams
+from app.models.comment import CommentCreate, CommentResponse, CommentListResponse
 from app.services.recipe import (
     create_recipe, 
     get_recipe_by_id, 
@@ -10,6 +11,7 @@ from app.services.recipe import (
     favorite_recipe, 
     search_recipes
 )
+from app.services.comment import create_comment, get_recipe_comments
 
 router = APIRouter()
 
@@ -136,4 +138,65 @@ async def search_community_recipes(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"搜索菜谱失败: {str(e)}"
+        )
+
+
+@router.post("/{recipe_id}/reviews", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
+async def add_recipe_review(
+    comment: CommentCreate,
+    recipe_id: str = Path(..., description="菜谱ID"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    为菜谱添加评论
+    
+    - 需要授权: Bearer Token
+    - **recipe_id**: 菜谱ID
+    - **rating**: 评分(1-5)
+    - **content**: 评论内容
+    - **images**: 可选的评论图片
+    - 返回创建的评论信息
+    """
+    try:
+        new_comment = await create_comment(recipe_id, comment, current_user)
+        return new_comment
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"添加评论失败: {str(e)}"
+        )
+
+
+@router.get("/{recipe_id}/reviews", response_model=CommentListResponse)
+async def get_recipe_reviews(
+    recipe_id: str = Path(..., description="菜谱ID"),
+    page: int = Query(1, ge=1, description="页码"),
+    limit: int = Query(10, ge=1, le=50, description="每页数量"),
+    current_user: Optional[dict] = Depends(get_current_user)
+):
+    """
+    获取菜谱评论列表
+    
+    - **recipe_id**: 菜谱ID
+    - **page**: 页码
+    - **limit**: 每页数量
+    - 返回评论列表及分页信息
+    """
+    try:
+        comments, total = await get_recipe_comments(recipe_id, page, limit, current_user)
+        return CommentListResponse(
+            comments=comments,
+            total=total,
+            page=page,
+            limit=limit,
+            pages=(total + limit - 1) // limit
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取评论失败: {str(e)}"
         )

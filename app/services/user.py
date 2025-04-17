@@ -36,6 +36,38 @@ async def get_user_by_openid(openid: str) -> Optional[Dict[str, Any]]:
         raise DatabaseError(detail=f"获取用户失败: {str(e)}")
 
 
+async def get_user_by_phone(phone: str) -> Optional[Dict[str, Any]]:
+    """
+    根据手机号获取用户
+    """
+    try:
+        user_collection = get_collection(USERS_COLLECTION)
+        user = await user_collection.find_one({"phone": phone})
+        return user
+    except Exception as e:
+        raise DatabaseError(detail=f"获取用户失败: {str(e)}")
+
+
+async def get_user_by_account(account: str) -> Optional[Dict[str, Any]]:
+    """
+    根据账号获取用户
+    账号可以是手机号、用户名或邮箱
+    """
+    try:
+        user_collection = get_collection(USERS_COLLECTION)
+        # 尝试多种可能的账号类型
+        user = await user_collection.find_one({
+            "$or": [
+                {"phone": account},
+                {"username": account},
+                {"email": account}
+            ]
+        })
+        return user
+    except Exception as e:
+        raise DatabaseError(detail=f"获取用户失败: {str(e)}")
+
+
 async def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     创建新用户
@@ -48,6 +80,10 @@ async def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
             existing_user = await get_user_by_openid(user_data["openid"])
             if existing_user:
                 return existing_user
+        elif "phone" in user_data:
+            existing_user = await get_user_by_phone(user_data["phone"])
+            if existing_user:
+                return existing_user
         
         # 设置默认值
         now = datetime.utcnow()
@@ -56,8 +92,9 @@ async def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
         
         # 确保profile字段存在
         if "profile" not in user_data:
+            nickname_src = user_data.get('openid', user_data.get('phone', str(ObjectId())))
             user_data["profile"] = {
-                "nickname": f"用户{user_data['openid'][-6:]}",
+                "nickname": f"用户{nickname_src[-6:]}",
                 "gender": Gender.UNKNOWN.value
             }
         

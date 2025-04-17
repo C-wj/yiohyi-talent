@@ -11,7 +11,7 @@ from app.core.auth import (ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user,
                           update_last_login)
 from app.core.config import settings
 from app.db.mongodb import get_collection, db
-from app.models.user import Token, UserCreate, UserModel, UserResponse
+from app.models.user import Token, UserCreate, UserModel, UserResponse, BaseResponse, PhoneNumberRequest, VerifySMSRequest
 
 router = APIRouter(
     prefix="/auth",
@@ -99,4 +99,65 @@ async def refresh_token(current_user: UserModel = Depends(get_current_user)) -> 
     return {
         "access_token": access_token,
         "token_type": "bearer"
-    } 
+    }
+
+
+@router.post("/send-sms", response_model=BaseResponse)
+async def send_sms_code(phone_data: PhoneNumberRequest):
+    """发送短信验证码"""
+    phone_number = phone_data.phone_number
+    
+    # 检查手机号格式
+    if not is_valid_phone_number(phone_number):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="无效的手机号码"
+        )
+    
+    # 生成验证码
+    code = generate_sms_code()
+    
+    # 存储验证码(使用缓存系统，如Redis)
+    await store_sms_code(phone_number, code)
+    
+    # 发送短信
+    success = await send_sms(phone_number, code)
+    
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="短信发送失败，请稍后重试"
+        )
+    
+    return BaseResponse(
+        status="success",
+        message="验证码已发送",
+        data={"expires_in": SMS_CODE_EXPIRE_MINUTES}
+    )
+
+
+@router.post("/verify-sms", response_model=Token)
+async def verify_sms_code(verify_data: VerifySMSRequest):
+    """验证短信验证码并登录"""
+    phone_number = verify_data.phone_number
+    code = verify_data.code
+    
+    # 验证码校验
+    is_valid = await verify_sms_code(phone_number, code)
+    
+    if not is_valid:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="验证码错误或已过期"
+        )
+    
+    # 查找或创建用户
+    user = await get_or_create_user_by_phone(phone_number)
+    
+    # 生成token
+    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user["username"]}, expires_delta=access_token_expires
+    )
+    
+    return {"access_token": access_token, "token_type": "bearer"} 

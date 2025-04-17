@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     
     # 服务器配置
     HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    PORT: int 
     WORKERS: int = 1
     
     # 数据库配置
@@ -102,7 +102,11 @@ class Settings(BaseSettings):
         env_file_encoding = "utf-8"
         case_sensitive = True
 
-
+print("当前工作目录:", os.getcwd())
+print("env文件是否存在:", os.path.exists(".env"))
+with open(".env", "r") as f:
+    print("env文件内容:\n", f.read())
+print("系统环境变量MONGODB_URI:", os.environ.get("MONGODB_URI"))
 # 加载配置并创建单例实例
 settings = Settings()
 

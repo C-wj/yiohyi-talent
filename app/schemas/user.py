@@ -103,4 +103,24 @@ class WechatLoginResponse(BaseModel):
 class WechatBindRequest(BaseModel):
     """微信绑定请求"""
     code: str
-    open_id: str 
+    open_id: str
+
+
+# 添加密码登录请求模型
+class PasswordLoginRequest(BaseModel):
+    """账号密码登录请求"""
+    account: str
+    password: str
+
+
+# 添加短信验证码请求模型
+class SmsRequest(BaseModel):
+    """短信验证码发送请求"""
+    phoneNumber: str
+
+
+# 添加短信验证码验证请求模型
+class SmsVerifyRequest(BaseModel):
+    """短信验证码验证请求"""
+    phoneNumber: str
+    code: str 

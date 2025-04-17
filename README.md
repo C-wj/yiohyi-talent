@@ -73,8 +73,8 @@ docker-compose up -d
 ## API文档
 
 启动服务器后，可通过以下URL访问API文档：
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:9091/docs
+- ReDoc: http://localhost:9091/redoc
 
 ## 开发规范
 

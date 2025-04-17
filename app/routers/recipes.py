@@ -12,6 +12,7 @@ from app.db.mongodb import get_collection
 from app.models.recipe import (RecipeCreate, RecipeCreator, RecipeModel,
                            RecipeResponse, RecipeSearchParams, RecipeUpdate)
 from app.models.user import UserModel
+from app.models.comment import (CommentCreate, CommentResponse, CommentsListResponse)
 
 router = APIRouter(
     prefix="/recipes",
@@ -329,4 +330,138 @@ async def toggle_favorite(
             {"$inc": {"stats.favoriteCount": 1}}
         )
         
-        return {"favorited": True} 
+        return {"favorited": True}
+
+
+@router.post("/{recipe_id}/comments", response_model=CommentResponse)
+async def add_comment(
+    recipe_id: str,
+    comment_data: CommentCreate,
+    current_user: UserModel = Depends(get_current_user),
+    recipes_collection: Collection = Depends(get_collection(settings.MONGODB_RECIPE_COLLECTION)),
+    comments_collection: Collection = Depends(get_collection(settings.MONGODB_COMMENT_COLLECTION))
+):
+    """添加菜谱评论"""
+    try:
+        recipe = await recipes_collection.find_one({"_id": ObjectId(recipe_id)})
+    except:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无效的菜谱ID")
+    
+    if not recipe:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="菜谱不存在")
+    
+    # 创建评论
+    comment = {
+        "recipeId": recipe_id,
+        "userId": current_user.id,
+        "content": comment_data.content,
+        "rating": comment_data.rating,
+        "images": comment_data.images,
+        "createdAt": datetime.now(),
+        "likes": 0
+    }
+    
+    result = await comments_collection.insert_one(comment)
+    
+    # 更新菜谱评论数
+    await recipes_collection.update_one(
+        {"_id": ObjectId(recipe_id)},
+        {"$inc": {"stats.commentCount": 1}}
+    )
+    
+    # 如果提供了评分，更新菜谱评分
+    if comment_data.rating:
+        # 获取当前评分信息
+        current_rating = recipe.get("stats", {}).get("ratingAvg", 0)
+        current_count = recipe.get("stats", {}).get("ratingCount", 0)
+        
+        # 计算新评分
+        new_count = current_count + 1
+        new_rating = ((current_rating * current_count) + comment_data.rating) / new_count
+        
+        # 更新评分
+        await recipes_collection.update_one(
+            {"_id": ObjectId(recipe_id)},
+            {"$set": {
+                "stats.ratingAvg": new_rating,
+                "stats.ratingCount": new_count
+            }}
+        )
+    
+    # 获取插入的评论并返回
+    created_comment = await comments_collection.find_one({"_id": result.inserted_id})
+    created_comment["id"] = str(created_comment.pop("_id"))
+    
+    # 添加用户信息
+    created_comment["user"] = {
+        "id": current_user.id,
+        "nickname": current_user.profile.nickname,
+        "avatar": current_user.profile.avatar
+    }
+    
+    return CommentResponse(
+        status="success",
+        data=created_comment,
+        message="评论添加成功"
+    )
+
+
+@router.get("/{recipe_id}/comments", response_model=CommentsListResponse)
+async def get_comments(
+    recipe_id: str,
+    page: int = Query(1, ge=1),
+    limit: int = Query(10, ge=1, le=50),
+    recipes_collection: Collection = Depends(get_collection(settings.MONGODB_RECIPE_COLLECTION)),
+    comments_collection: Collection = Depends(get_collection(settings.MONGODB_COMMENT_COLLECTION)),
+    users_collection: Collection = Depends(get_collection(settings.MONGODB_USER_COLLECTION))
+):
+    """获取菜谱评论列表"""
+    try:
+        recipe = await recipes_collection.find_one({"_id": ObjectId(recipe_id)})
+    except:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="无效的菜谱ID")
+    
+    if not recipe:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="菜谱不存在")
+    
+    # 分页查询评论
+    skip = (page - 1) * limit
+    cursor = comments_collection.find({"recipeId": recipe_id}).sort("createdAt", -1).skip(skip).limit(limit)
+    
+    comments = []
+    async for comment in cursor:
+        comment["id"] = str(comment.pop("_id"))
+        
+        # 获取用户信息
+        user = await users_collection.find_one({"_id": ObjectId(comment["userId"])})
+        if user:
+            comment["user"] = {
+                "id": str(user["_id"]),
+                "nickname": user.get("profile", {}).get("nickname", "用户"),
+                "avatar": user.get("profile", {}).get("avatar", "")
+            }
+        else:
+            comment["user"] = {
+                "id": comment["userId"],
+                "nickname": "未知用户",
+                "avatar": ""
+            }
+        
+        comments.append(comment)
+    
+    # 获取评论总数
+    total_comments = await comments_collection.count_documents({"recipeId": recipe_id})
+    
+    return CommentsListResponse(
+        status="success",
+        data={
+            "list": comments,
+            "pagination": {
+                "total": total_comments,
+                "page": page,
+                "limit": limit,
+                "pages": (total_comments + limit - 1) // limit
+            }
+        },
+        message="获取评论成功"
+    ) 
