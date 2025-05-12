@@ -9,7 +9,7 @@ from pymongo.errors import PyMongoError
 
 from app.core.config import settings
 from app.db.mongodb import get_collection
-from app.models.user import TokenData, UserModel
+from app.models.user import TokenData, UserInDB
 
 # JWT配置
 SECRET_KEY = settings.SECRET_KEY
@@ -33,17 +33,16 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-async def get_user_by_username(username: str) -> Optional[UserModel]:
+async def get_user_by_username(username: str) -> Optional[UserInDB]:
     """根据用户名获取用户"""
     users_collection = get_collection("users")
     user_doc = await users_collection.find_one({"username": username})
     if user_doc:
-        user_doc["id"] = str(user_doc.pop("_id"))
-        return UserModel(**user_doc)
+        return UserInDB(**user_doc)
     return None
 
 
-async def authenticate_user(username: str, password: str) -> Optional[UserModel]:
+async def authenticate_user(username: str, password: str) -> Optional[UserInDB]:
     """验证用户"""
     user = await get_user_by_username(username)
     if not user:
@@ -67,7 +66,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     return encoded_jwt
 
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserModel:
+async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
     """获取当前用户"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -81,19 +80,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserModel:
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
-        token_data = TokenData(username=username)
+        token_data = TokenData(sub=username)
     except JWTError:
         raise credentials_exception
         
     # 获取用户信息
-    user = await get_user_by_username(token_data.username)
+    user = await get_user_by_username(token_data.sub)
     if user is None:
         raise credentials_exception
         
     return user
 
 
-async def get_current_active_user(current_user: UserModel = Depends(get_current_user)) -> UserModel:
+async def get_current_active_user(current_user: UserInDB = Depends(get_current_user)) -> UserInDB:
     """获取当前活跃用户"""
     if not current_user.isActive:
         raise HTTPException(status_code=400, detail="账号已被禁用")

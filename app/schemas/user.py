@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 from pydantic import BaseModel, Field, EmailStr
 
@@ -12,14 +12,37 @@ class UserProfileBase(BaseModel):
     avatar: Optional[str] = None
     gender: Gender = Gender.UNKNOWN
     bio: Optional[str] = None
+    location: Optional[str] = None
+    birthday: Optional[datetime] = None
+    website: Optional[str] = None
+    profession: Optional[str] = None
+    interests: List[str] = Field(default_factory=list)
+    background_image: Optional[str] = None
 
 
 class DietaryPreferenceBase(BaseModel):
     """饮食偏好基础模型"""
-    dietary: List[str] = []
-    allergies: List[str] = []
-    favorite_cuisines: List[str] = []
-    disliked_ingredients: List[str] = []
+    dietary: List[str] = Field(default_factory=list)
+    allergies: List[str] = Field(default_factory=list)
+    favorite_cuisines: List[str] = Field(default_factory=list)
+    disliked_ingredients: List[str] = Field(default_factory=list)
+    preferred_meal_time: Optional[str] = None
+    preferred_portion_size: Optional[str] = None
+    health_goals: List[str] = Field(default_factory=list)
+    taste_preferences: Dict[str, int] = Field(default_factory=dict)  # 例如: {"酸": 5, "甜": 3}
+
+
+class NotificationSettingsBase(BaseModel):
+    """通知设置基础模型"""
+    email_notifications: bool = True
+    push_notifications: bool = True
+    sms_notifications: bool = False
+    activity_notifications: bool = True
+    marketing_notifications: bool = False
+    comment_notifications: bool = True
+    follower_notifications: bool = True
+    like_notifications: bool = True
+    message_notifications: bool = True
 
 
 class UserStatsResponse(BaseModel):
@@ -29,12 +52,16 @@ class UserStatsResponse(BaseModel):
     order_count: int
     followers_count: int
     following_count: int
+    rating_avg: Optional[float] = None
+    review_count: int = 0
+    contribution_score: int = 0
 
 
 class UserBase(BaseModel):
     """用户基础模型"""
     profile: UserProfileBase
     preferences: Optional[DietaryPreferenceBase] = None
+    notification_settings: Optional[NotificationSettingsBase] = None
 
 
 class UserCreate(UserBase):
@@ -46,6 +73,7 @@ class UserUpdate(BaseModel):
     """用户更新模型"""
     profile: Optional[UserProfileBase] = None
     preferences: Optional[DietaryPreferenceBase] = None
+    notification_settings: Optional[NotificationSettingsBase] = None
 
 
 class UserResponse(UserBase):

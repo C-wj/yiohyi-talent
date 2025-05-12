@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, status
 from typing import List, Optional
+import logging
+from pydantic import ValidationError
 
 from app.api.dependencies import get_current_user
 from app.models.recipe import RecipeCreate, RecipeUpdate, RecipeResponse, RecipeSearchParams
@@ -11,9 +13,12 @@ from app.services.recipe import (
     favorite_recipe, 
     search_recipes
 )
-from app.services.comment import create_comment, get_recipe_comments
+from app.services.comment import create_comment, get_recipe_comments, delete_comment, like_comment, unlike_comment, reply_comment, get_comment_by_id
 
 router = APIRouter()
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 
 @router.post("/", response_model=RecipeResponse, status_code=status.HTTP_201_CREATED)
@@ -37,10 +42,9 @@ async def create_new_recipe(
         )
 
 
-@router.get("/{recipe_id}", response_model=RecipeResponse)
+@router.get("/{recipe_id}", response_model=None)
 async def get_recipe_detail(
-    recipe_id: str = Path(..., description="菜谱ID"),
-    current_user: Optional[dict] = Depends(get_current_user)
+    recipe_id: str = Path(..., description="菜谱ID")
 ):
     """
     获取菜谱详细信息
@@ -48,17 +52,26 @@ async def get_recipe_detail(
     - **recipe_id**: 菜谱ID
     - 返回菜谱详细信息
     """
+    logger.info(f"尝试获取菜谱 {recipe_id}")
     try:
-        recipe = await get_recipe_by_id(recipe_id, current_user)
+        recipe = await get_recipe_by_id(recipe_id)
         if not recipe:
+            logger.warning(f"未找到菜谱 {recipe_id}")
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="菜谱不存在"
             )
+        logger.info(f"成功获取菜谱 {recipe_id}: {recipe.get('title', 'unknown')}")
+        # 直接返回字典，不使用Pydantic模型转换
         return recipe
-    except HTTPException:
+    except HTTPException as he:
+        logger.error(f"请求处理失败 - HTTP异常: {str(he)}")
         raise
     except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        logger.error(f"请求处理失败 - 获取菜谱失败: {str(e)}")
+        logger.error(f"错误详情: {error_trace}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"获取菜谱失败: {str(e)}"
@@ -121,8 +134,7 @@ async def favorite_recipe_toggle(
 
 @router.get("/", response_model=List[RecipeResponse])
 async def search_community_recipes(
-    params: RecipeSearchParams = Depends(),
-    current_user: Optional[dict] = Depends(get_current_user)
+    params: RecipeSearchParams = Depends()
 ):
     """
     搜索社区菜谱
@@ -131,7 +143,7 @@ async def search_community_recipes(
     - 返回菜谱列表及分页信息
     """
     try:
-        recipes, total = await search_recipes(params, current_user)
+        recipes, total = await search_recipes(params)
         # 添加分页信息到响应头
         return recipes
     except Exception as e:
@@ -173,8 +185,7 @@ async def add_recipe_review(
 async def get_recipe_reviews(
     recipe_id: str = Path(..., description="菜谱ID"),
     page: int = Query(1, ge=1, description="页码"),
-    limit: int = Query(10, ge=1, le=50, description="每页数量"),
-    current_user: Optional[dict] = Depends(get_current_user)
+    limit: int = Query(10, ge=1, le=50, description="每页数量")
 ):
     """
     获取菜谱评论列表
@@ -185,7 +196,7 @@ async def get_recipe_reviews(
     - 返回评论列表及分页信息
     """
     try:
-        comments, total = await get_recipe_comments(recipe_id, page, limit, current_user)
+        comments, total = await get_recipe_comments(recipe_id, page, limit)
         return CommentListResponse(
             comments=comments,
             total=total,
@@ -200,3 +211,71 @@ async def get_recipe_reviews(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"获取评论失败: {str(e)}"
         )
+
+
+@router.delete("/{recipe_id}/reviews/{review_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_recipe_review(
+    recipe_id: str = Path(..., description="菜谱ID"),
+    review_id: str = Path(..., description="评论ID"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    删除评论（仅作者或管理员可删）
+    """
+    ok = await delete_comment(recipe_id, review_id, current_user)
+    if not ok:
+        raise HTTPException(status_code=404, detail="评论不存在或无权删除")
+    return {"success": True}
+
+
+@router.post("/{recipe_id}/reviews/{review_id}/like", status_code=status.HTTP_200_OK)
+async def like_recipe_review(
+    recipe_id: str = Path(..., description="菜谱ID"),
+    review_id: str = Path(..., description="评论ID"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    点赞评论
+    """
+    ok = await like_comment(review_id, str(current_user["_id"]))
+    return {"success": ok}
+
+
+@router.delete("/{recipe_id}/reviews/{review_id}/like", status_code=status.HTTP_200_OK)
+async def unlike_recipe_review(
+    recipe_id: str = Path(..., description="菜谱ID"),
+    review_id: str = Path(..., description="评论ID"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    取消点赞评论
+    """
+    ok = await unlike_comment(review_id, str(current_user["_id"]))
+    return {"success": ok}
+
+
+@router.post("/{recipe_id}/reviews/{review_id}/reply", response_model=CommentResponse, status_code=status.HTTP_201_CREATED)
+async def reply_recipe_review(
+    comment: CommentCreate,
+    recipe_id: str = Path(..., description="菜谱ID"),
+    review_id: str = Path(..., description="父评论ID"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    回复评论
+    """
+    return await reply_comment(recipe_id, review_id, comment, current_user)
+
+
+@router.get("/{recipe_id}/reviews/{review_id}", response_model=CommentResponse)
+async def get_recipe_review_detail(
+    recipe_id: str = Path(..., description="菜谱ID"),
+    review_id: str = Path(..., description="评论ID")
+):
+    """
+    获取单条评论详情
+    """
+    comment = await get_comment_by_id(recipe_id, review_id)
+    if not comment:
+        raise HTTPException(status_code=404, detail="评论不存在")
+    return comment

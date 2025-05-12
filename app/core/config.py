@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     PROJECT_ROOT: Path = Path(__file__).parent.parent.parent
     ALLOWED_HOSTS: List[str] = ["*"]
     CORS_ORIGINS: List[Union[str, AnyHttpUrl]] = ["*"]
+    FRONTEND_URL: str = "http://localhost:3000"
     
     # 服务器配置
     HOST: str = "0.0.0.0"
@@ -43,6 +44,13 @@ class Settings(BaseSettings):
     # 微信小程序配置
     WECHAT_MINI_APP_ID: str
     WECHAT_MINI_APP_SECRET: str
+    
+    # SMTP邮件配置
+    SMTP_SERVER: str = "smtp.example.com"
+    SMTP_PORT: int = 587
+    SMTP_USER: str = "noreply@example.com"
+    SMTP_PASSWORD: str = ""
+    SMTP_TLS: bool = True
     
     # 文件存储配置
     UPLOAD_DIR: Path = Path("static/uploads")

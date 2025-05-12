@@ -3,10 +3,11 @@
 """
 from typing import List, Dict, Any
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
 
 from app.models.homepage import ContentType, HomeContentResponse
-from app.services.homepage import get_swipers, get_featured_recipes, get_popular_recipes
+from app.services.homepage import get_swipers, get_featured_recipes, get_popular_recipes, create_swiper, create_card
+from app.db.mongodb import get_database, get_collection
 
 router = APIRouter()
 
@@ -16,10 +17,35 @@ async def get_home_data():
     """
     获取首页数据
     """
-    # 获取各种首页内容
-    swipers = await get_swipers()
-    featured = await get_featured_recipes()
-    popular = await get_popular_recipes()
+    # 直接从数据库查询各种首页内容
+    collection = get_collection("home_contents")
+    
+    # 查询轮播图
+    swipers = await collection.find({"type": ContentType.SWIPER.value}).sort("sort_order", 1).to_list(length=6)
+    
+    # 查询精选推荐
+    featured = await collection.find({"type": ContentType.FEATURED.value}).sort("sort_order", 1).to_list(length=5)
+    
+    # 查询热门内容
+    popular = await collection.find({"type": ContentType.POPULAR.value}).sort("sort_order", 1).to_list(length=5)
+    
+    # 确保数据存在，如果数据库中没有数据，初始化默认数据
+    if not swipers:
+        await initialize_default_swipers()
+        swipers = await collection.find({"type": ContentType.SWIPER.value}).sort("sort_order", 1).to_list(length=6)
+    
+    if not featured:
+        await initialize_default_featured()
+        featured = await collection.find({"type": ContentType.FEATURED.value}).sort("sort_order", 1).to_list(length=5)
+    
+    if not popular:
+        await initialize_default_popular()
+        popular = await collection.find({"type": ContentType.POPULAR.value}).sort("sort_order", 1).to_list(length=5)
+    
+    # 处理数据格式，MongoDB的_id需要转为id字段
+    for item in swipers + featured + popular:
+        if "_id" in item:
+            item["id"] = str(item.pop("_id"))
     
     return {
         "status": "success",
@@ -40,24 +66,25 @@ async def get_home_swipers(
     """
     获取首页轮播图数据
     """
-    # 从数据库获取轮播图数据
-    swipers = await get_swipers()
+    # 直接从数据库查询轮播图数据
+    collection = get_collection("home_contents")
+    swipers = await collection.find({"type": ContentType.SWIPER.value}).sort("sort_order", 1).to_list(length=limit)
     
-    # 如果数据库中没有轮播图数据，返回默认数据
+    # 如果数据库中没有轮播图数据，进行初始化
     if not swipers:
-        # 返回轮播图图片URL列表（静态数据作为备用）
-        default_swipers = [
-            {
-                "id": f"default-swiper-{i}",
-                "type": ContentType.SWIPER.value,
-                "title": f"默认轮播图 {i+1}",
-                "image_url": f"/static/home/swiper{i}.png",
-                "description": f"默认轮播图示例 {i+1}"
-            } for i in range(min(6, limit))
-        ]
-        return default_swipers[:limit]
+        await initialize_default_swipers()
+        swipers = await collection.find({"type": ContentType.SWIPER.value}).sort("sort_order", 1).to_list(length=limit)
     
-    return swipers[:limit]
+    # 处理数据格式，MongoDB的_id需要转为id字段
+    result = []
+    for swiper in swipers:
+        # 转换ID字段
+        if "_id" in swiper:
+            swiper["id"] = str(swiper.pop("_id"))
+        
+        result.append(swiper)
+    
+    return result[:limit]
 
 
 @router.get("/cards", response_model=List[HomeContentResponse])
@@ -68,74 +95,162 @@ async def get_home_cards(
     """
     获取首页卡片数据
     """
-    # 根据卡片类型从数据库获取数据
+    # 直接从数据库查询卡片数据
+    collection = get_collection("home_contents")
+    
     if card_type == ContentType.FEATURED.value:
-        cards = await get_featured_recipes()
+        cards = await collection.find({"type": ContentType.FEATURED.value}).sort("sort_order", 1).to_list(length=limit)
+        if not cards:
+            await initialize_default_featured()
+            cards = await collection.find({"type": ContentType.FEATURED.value}).sort("sort_order", 1).to_list(length=limit)
     elif card_type == ContentType.POPULAR.value:
-        cards = await get_popular_recipes()
+        cards = await collection.find({"type": ContentType.POPULAR.value}).sort("sort_order", 1).to_list(length=limit)
+        if not cards:
+            await initialize_default_popular()
+            cards = await collection.find({"type": ContentType.POPULAR.value}).sort("sort_order", 1).to_list(length=limit)
     else:
         cards = []
     
-    # 如果数据库中没有卡片数据，返回默认数据
-    if not cards:
-        # 返回卡片数据列表（静态数据作为备用）
-        default_cards = [
-            {
-                "id": "default-card-0",
-                "type": card_type,
-                "title": "家常红烧肉",
-                "image_url": "/static/home/card0.png",
-                "description": "家常红烧肉，肥而不腻",
-                "tags": [
-                    {"text": "家常菜", "theme": "primary"},
-                    {"text": "肉类", "theme": "success"}
-                ]
-            },
-            {
-                "id": "default-card-1",
-                "type": card_type,
-                "title": "清蒸鲈鱼",
-                "image_url": "/static/home/card1.png",
-                "description": "清蒸鲈鱼，鲜香可口",
-                "tags": [
-                    {"text": "海鲜", "theme": "primary"},
-                    {"text": "低脂", "theme": "success"}
-                ]
-            },
-            {
-                "id": "default-card-2",
-                "type": card_type,
-                "title": "宫保鸡丁",
-                "image_url": "/static/home/card2.png",
-                "description": "宫保鸡丁，麻辣鲜香",
-                "tags": [
-                    {"text": "川菜", "theme": "primary"},
-                    {"text": "家常菜", "theme": "success"}
-                ]
-            },
-            {
-                "id": "default-card-3",
-                "type": card_type,
-                "title": "番茄炒蛋",
-                "image_url": "/static/home/card3.png",
-                "description": "番茄炒蛋，酸甜可口",
-                "tags": [
-                    {"text": "快手菜", "theme": "primary"},
-                    {"text": "家常菜", "theme": "success"}
-                ]
-            },
-            {
-                "id": "default-card-4",
-                "type": card_type,
-                "title": "水煮鱼片",
-                "image_url": "/static/home/card4.png",
-                "description": "水煮鱼片，麻辣鲜香",
-                "tags": [
-                    {"text": "川菜", "theme": "primary"},
-                    {"text": "鱼类", "theme": "success"}
-                ]
-            }
-        ]
-        return default_cards[:limit]
+    # 处理数据格式，MongoDB的_id需要转为id字段
+    result = []
+    for card in cards:
+        # 转换ID字段
+        if "_id" in card:
+            card["id"] = str(card.pop("_id"))
+        
+        result.append(card)
     
-    return cards[:limit] 
+    return result[:limit]
+
+
+# 辅助函数，初始化默认数据
+async def initialize_default_swipers():
+    """初始化默认轮播图数据"""
+    admin_id = "system_admin"  # 系统管理员ID
+    
+    default_swipers = [
+        {
+            "title": "家常红烧肉",
+            "image_url": "/static/home/swiper0.png",
+            "description": "家常红烧肉，肥而不腻",
+            "tags": [
+                {"text": "家常菜", "theme": "primary"},
+                {"text": "肉类", "theme": "success"}
+            ],
+            "sort_order": 0
+        },
+        {
+            "title": "清蒸鲈鱼",
+            "image_url": "/static/home/swiper1.png",
+            "description": "清蒸鲈鱼，鲜香可口",
+            "tags": [
+                {"text": "海鲜", "theme": "primary"},
+                {"text": "低脂", "theme": "success"}
+            ],
+            "sort_order": 1
+        },
+        {
+            "title": "宫保鸡丁",
+            "image_url": "/static/home/swiper2.png",
+            "description": "宫保鸡丁，麻辣鲜香",
+            "tags": [
+                {"text": "川菜", "theme": "primary"},
+                {"text": "家常菜", "theme": "success"}
+            ],
+            "sort_order": 2
+        }
+    ]
+    
+    # 将默认数据插入数据库
+    for swiper_data in default_swipers:
+        from app.models.homepage import SwiperCreate
+        swiper = SwiperCreate(**swiper_data)
+        await create_swiper(swiper, admin_id)
+
+
+async def initialize_default_featured():
+    """初始化默认精选菜谱数据"""
+    admin_id = "system_admin"  # 系统管理员ID
+    
+    default_featured = [
+        {
+            "title": "家常红烧肉",
+            "image_url": "/static/home/card0.png",
+            "target_id": "default_recipe_1",
+            "target_type": "recipe",
+            "description": "家常红烧肉，肥而不腻",
+            "tags": [
+                {"text": "家常菜", "theme": "primary"},
+                {"text": "肉类", "theme": "success"}
+            ],
+            "sort_order": 0
+        },
+        {
+            "title": "清蒸鲈鱼",
+            "image_url": "/static/home/card1.png",
+            "target_id": "default_recipe_2",
+            "target_type": "recipe",
+            "description": "清蒸鲈鱼，鲜香可口",
+            "tags": [
+                {"text": "海鲜", "theme": "primary"},
+                {"text": "低脂", "theme": "success"}
+            ],
+            "sort_order": 1
+        },
+        {
+            "title": "宫保鸡丁",
+            "image_url": "/static/home/card2.png",
+            "target_id": "default_recipe_3",
+            "target_type": "recipe",
+            "description": "宫保鸡丁，麻辣鲜香",
+            "tags": [
+                {"text": "川菜", "theme": "primary"},
+                {"text": "家常菜", "theme": "success"}
+            ],
+            "sort_order": 2
+        }
+    ]
+    
+    # 将默认数据插入数据库
+    for card_data in default_featured:
+        from app.models.homepage import CardCreate, ContentType
+        card = CardCreate(**card_data)
+        await create_card(card, ContentType.FEATURED, admin_id)
+
+
+async def initialize_default_popular():
+    """初始化默认热门菜谱数据"""
+    admin_id = "system_admin"  # 系统管理员ID
+    
+    default_popular = [
+        {
+            "title": "番茄炒蛋",
+            "image_url": "/static/home/card3.png",
+            "target_id": "default_recipe_4",
+            "target_type": "recipe",
+            "description": "番茄炒蛋，酸甜可口",
+            "tags": [
+                {"text": "快手菜", "theme": "primary"},
+                {"text": "家常菜", "theme": "success"}
+            ],
+            "sort_order": 0
+        },
+        {
+            "title": "水煮鱼片",
+            "image_url": "/static/home/card4.png",
+            "target_id": "default_recipe_5",
+            "target_type": "recipe",
+            "description": "水煮鱼片，麻辣鲜香",
+            "tags": [
+                {"text": "川菜", "theme": "primary"},
+                {"text": "鱼类", "theme": "success"}
+            ],
+            "sort_order": 1
+        }
+    ]
+    
+    # 将默认数据插入数据库
+    for card_data in default_popular:
+        from app.models.homepage import CardCreate, ContentType
+        card = CardCreate(**card_data)
+        await create_card(card, ContentType.POPULAR, admin_id) 

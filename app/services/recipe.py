@@ -3,7 +3,7 @@ from typing import List, Dict, Tuple, Optional, Any
 from bson import ObjectId
 from fastapi import HTTPException, status
 
-from app.db.mongodb import get_database
+from app.db.mongodb import get_collection
 from app.models.recipe import RecipeCreate, RecipeUpdate, RecipeSearchParams, RecipeCreator
 
 
@@ -18,7 +18,9 @@ async def create_recipe(recipe_data: RecipeCreate, current_user: dict) -> dict:
     Returns:
         创建的菜谱信息
     """
-    db = await get_database()
+    # 获取集合
+    recipes_collection = get_collection("recipes")
+    users_collection = get_collection("users")
     
     # 创建菜谱创建者信息
     creator = RecipeCreator(
@@ -63,16 +65,16 @@ async def create_recipe(recipe_data: RecipeCreate, current_user: dict) -> dict:
     }
     
     # 插入菜谱文档
-    result = await db.recipes.insert_one(recipe_doc)
+    result = await recipes_collection.insert_one(recipe_doc)
     
     # 更新用户的菜谱计数
-    await db.users.update_one(
+    await users_collection.update_one(
         {"_id": ObjectId(current_user["_id"])},
         {"$inc": {"stats.recipeCount": 1}}
     )
     
     # 获取创建的菜谱
-    created_recipe = await db.recipes.find_one({"_id": result.inserted_id})
+    created_recipe = await recipes_collection.find_one({"_id": result.inserted_id})
     
     # 转换_id为字符串
     created_recipe["id"] = str(created_recipe.pop("_id"))
@@ -91,47 +93,50 @@ async def get_recipe_by_id(recipe_id: str, current_user: Optional[dict] = None) 
     Returns:
         菜谱详情或None(如果不存在)
     """
-    db = await get_database()
+    # 获取集合
+    recipes_collection = get_collection("recipes")
+    favorites_collection = get_collection("favorites")
     
     try:
         # 转换字符串ID为ObjectId
         recipe_object_id = ObjectId(recipe_id)
-    except:
+    except Exception as e:
         # ID格式无效
+        print(f"无效的ObjectId格式: {recipe_id}, 错误: {str(e)}")
         return None
     
     # 查询菜谱
-    recipe = await db.recipes.find_one({"_id": recipe_object_id})
-    
-    if not recipe:
-        return None
-    
-    # 检查访问权限
-    if not recipe.get("isPublic", False):
-        # 非公开菜谱只能创建者查看
-        if current_user is None or str(recipe["creator"]["userId"]) != str(current_user["_id"]):
+    try:
+        recipe = await recipes_collection.find_one({"_id": recipe_object_id})
+        
+        if not recipe:
             return None
-    
-    # 增加浏览次数
-    await db.recipes.update_one(
-        {"_id": recipe_object_id},
-        {"$inc": {"stats.viewCount": 1}}
-    )
-    
-    # 如果用户已登录，检查是否已收藏
-    if current_user:
-        favorite = await db.favorites.find_one({
-            "userId": str(current_user["_id"]),
-            "recipeId": recipe_id
-        })
-        recipe["is_favorite"] = favorite is not None
-    else:
-        recipe["is_favorite"] = False
-    
-    # 转换_id为字符串
-    recipe["id"] = str(recipe.pop("_id"))
-    
-    return recipe
+        
+        # 所有菜谱都允许公开访问，不再检查isPublic字段
+        
+        # 增加浏览次数
+        await recipes_collection.update_one(
+            {"_id": recipe_object_id},
+            {"$inc": {"stats.viewCount": 1}}
+        )
+        
+        # 如果用户已登录，检查是否已收藏
+        if current_user:
+            favorite = await favorites_collection.find_one({
+                "userId": str(current_user["_id"]),
+                "recipeId": recipe_id
+            })
+            recipe["is_favorite"] = favorite is not None
+        else:
+            recipe["is_favorite"] = False
+        
+        # 转换_id为字符串
+        recipe["id"] = str(recipe.pop("_id"))
+        
+        return recipe
+    except Exception as e:
+        print(f"查询菜谱时出错: {str(e)}")
+        return None
 
 
 async def update_recipe(recipe_id: str, recipe_data: RecipeUpdate, current_user: dict) -> Optional[dict]:
@@ -146,7 +151,8 @@ async def update_recipe(recipe_id: str, recipe_data: RecipeUpdate, current_user:
     Returns:
         更新后的菜谱或None(如果不存在或无权限)
     """
-    db = await get_database()
+    # 获取集合
+    recipes_collection = get_collection("recipes")
     
     try:
         # 转换字符串ID为ObjectId
@@ -156,7 +162,7 @@ async def update_recipe(recipe_id: str, recipe_data: RecipeUpdate, current_user:
         return None
     
     # 查询菜谱
-    recipe = await db.recipes.find_one({"_id": recipe_object_id})
+    recipe = await recipes_collection.find_one({"_id": recipe_object_id})
     
     if not recipe:
         return None
@@ -187,13 +193,13 @@ async def update_recipe(recipe_id: str, recipe_data: RecipeUpdate, current_user:
     update_doc["updatedAt"] = datetime.now()
     
     # 执行更新
-    await db.recipes.update_one(
+    await recipes_collection.update_one(
         {"_id": recipe_object_id},
         {"$set": update_doc}
     )
     
     # 获取更新后的菜谱
-    updated_recipe = await db.recipes.find_one({"_id": recipe_object_id})
+    updated_recipe = await recipes_collection.find_one({"_id": recipe_object_id})
     
     # 转换_id为字符串
     updated_recipe["id"] = str(updated_recipe.pop("_id"))
@@ -212,7 +218,10 @@ async def favorite_recipe(recipe_id: str, current_user: dict) -> dict:
     Returns:
         操作结果
     """
-    db = await get_database()
+    # 获取集合
+    recipes_collection = get_collection("recipes")
+    favorites_collection = get_collection("favorites")
+    users_collection = get_collection("users")
     
     try:
         # 转换字符串ID为ObjectId(用于检查菜谱是否存在)
@@ -225,7 +234,7 @@ async def favorite_recipe(recipe_id: str, current_user: dict) -> dict:
         )
     
     # 查询菜谱是否存在
-    recipe = await db.recipes.find_one({"_id": recipe_object_id})
+    recipe = await recipes_collection.find_one({"_id": recipe_object_id})
     
     if not recipe:
         raise HTTPException(
@@ -234,26 +243,26 @@ async def favorite_recipe(recipe_id: str, current_user: dict) -> dict:
         )
     
     # 检查是否已收藏
-    favorite = await db.favorites.find_one({
+    favorite = await favorites_collection.find_one({
         "userId": str(current_user["_id"]),
         "recipeId": recipe_id
     })
     
     if favorite:
         # 已收藏，取消收藏
-        await db.favorites.delete_one({
+        await favorites_collection.delete_one({
             "userId": str(current_user["_id"]),
             "recipeId": recipe_id
         })
         
         # 减少收藏计数
-        await db.recipes.update_one(
+        await recipes_collection.update_one(
             {"_id": recipe_object_id},
             {"$inc": {"stats.favoriteCount": -1}}
         )
         
         # 减少用户收藏计数
-        await db.users.update_one(
+        await users_collection.update_one(
             {"_id": ObjectId(current_user["_id"])},
             {"$inc": {"stats.favoriteCount": -1}}
         )
@@ -261,20 +270,20 @@ async def favorite_recipe(recipe_id: str, current_user: dict) -> dict:
         return {"is_favorite": False}
     else:
         # 未收藏，添加收藏
-        await db.favorites.insert_one({
+        await favorites_collection.insert_one({
             "userId": str(current_user["_id"]),
             "recipeId": recipe_id,
             "createdAt": datetime.now()
         })
         
         # 增加收藏计数
-        await db.recipes.update_one(
+        await recipes_collection.update_one(
             {"_id": recipe_object_id},
             {"$inc": {"stats.favoriteCount": 1}}
         )
         
         # 增加用户收藏计数
-        await db.users.update_one(
+        await users_collection.update_one(
             {"_id": ObjectId(current_user["_id"])},
             {"$inc": {"stats.favoriteCount": 1}}
         )
@@ -296,7 +305,9 @@ async def search_recipes(
     Returns:
         菜谱列表和总数
     """
-    db = await get_database()
+    # 获取集合
+    recipes_collection = get_collection("recipes")
+    favorites_collection = get_collection("favorites")
     
     # 构建查询条件
     query: Dict[str, Any] = {}
@@ -342,10 +353,6 @@ async def search_recipes(
     # 创建者过滤
     if params.creatorId:
         query["creator.userId"] = params.creatorId
-    elif current_user and not params.isPublic:
-        # 如果用户已登录且未指定公开状态，还可以显示自己的私有菜谱
-        query["$or"] = query.get("$or", [])
-        query["$or"].append({"creator.userId": str(current_user["_id"])})
     
     # 计算分页参数
     skip = (params.page - 1) * params.pageSize
@@ -361,10 +368,10 @@ async def search_recipes(
     sort_direction = -1 if params.sortDirection == "desc" else 1
     
     # 查询总数
-    total = await db.recipes.count_documents(query)
+    total = await recipes_collection.count_documents(query)
     
     # 执行查询
-    cursor = db.recipes.find(query)
+    cursor = recipes_collection.find(query)
     cursor = cursor.sort(sort_field, sort_direction)
     cursor = cursor.skip(skip).limit(limit)
     
@@ -377,7 +384,7 @@ async def search_recipes(
         
         # 如果用户已登录，检查是否已收藏
         if current_user:
-            favorite = await db.favorites.find_one({
+            favorite = await favorites_collection.find_one({
                 "userId": str(current_user["_id"]),
                 "recipeId": recipe["id"]
             })

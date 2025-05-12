@@ -68,6 +68,18 @@ async def get_user_by_account(account: str) -> Optional[Dict[str, Any]]:
         raise DatabaseError(detail=f"获取用户失败: {str(e)}")
 
 
+async def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+    """
+    根据邮箱获取用户
+    """
+    try:
+        user_collection = get_collection(USERS_COLLECTION)
+        user = await user_collection.find_one({"email": email})
+        return user
+    except Exception as e:
+        raise DatabaseError(detail=f"获取用户失败: {str(e)}")
+
+
 async def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     """
     创建新用户
@@ -195,4 +207,96 @@ async def update_user_last_login(user_id: str) -> None:
         )
     except Exception as e:
         # 这里只记录错误但不抛出异常，避免影响登录流程
-        print(f"更新用户最后登录时间失败: {str(e)}") 
+        print(f"更新用户最后登录时间失败: {str(e)}")
+
+
+async def update_user_stats(user_id: str, stat_type: str, value: int = 1) -> Dict[str, Any]:
+    """
+    更新用户统计数据
+    
+    参数:
+        user_id: 用户ID
+        stat_type: 统计类型 (recipe_count, favorite_count, order_count, followers_count, following_count)
+        value: 变化值 (默认+1, 传入负数表示减少)
+        
+    返回:
+        更新后的用户信息
+    """
+    try:
+        user_collection = get_collection(USERS_COLLECTION)
+        
+        # 检查用户是否存在
+        user = await get_user_by_id(user_id)
+        if not user:
+            raise NotFoundError(detail=f"用户 {user_id} 不存在")
+        
+        # 构建统计字段路径
+        stat_field = f"stats.{stat_type}"
+        
+        # 执行更新
+        await user_collection.update_one(
+            {"_id": user_id},
+            {
+                "$inc": {stat_field: value},
+                "$set": {"updated_at": datetime.utcnow()}
+            }
+        )
+        
+        # 返回更新后的用户
+        updated_user = await get_user_by_id(user_id)
+        return updated_user
+    except NotFoundError:
+        raise
+    except Exception as e:
+        raise DatabaseError(detail=f"更新用户统计数据失败: {str(e)}")
+
+
+async def update_user_rating(user_id: str, rating: float) -> Dict[str, Any]:
+    """
+    更新用户评分
+    
+    参数:
+        user_id: 用户ID
+        rating: 新增评分 (1-5)
+        
+    返回:
+        更新后的用户信息
+    """
+    try:
+        user_collection = get_collection(USERS_COLLECTION)
+        
+        # 检查用户是否存在
+        user = await get_user_by_id(user_id)
+        if not user:
+            raise NotFoundError(detail=f"用户 {user_id} 不存在")
+        
+        # 获取当前评分和评价数
+        current_avg = user.get("stats", {}).get("rating_avg", 0)
+        current_count = user.get("stats", {}).get("review_count", 0)
+        
+        # 计算新的平均评分
+        new_count = current_count + 1
+        new_avg = ((current_avg * current_count) + rating) / new_count if new_count > 0 else rating
+        
+        # 四舍五入到一位小数
+        new_avg = round(new_avg, 1)
+        
+        # 执行更新
+        await user_collection.update_one(
+            {"_id": user_id},
+            {
+                "$set": {
+                    "stats.rating_avg": new_avg,
+                    "stats.review_count": new_count,
+                    "updated_at": datetime.utcnow()
+                }
+            }
+        )
+        
+        # 返回更新后的用户
+        updated_user = await get_user_by_id(user_id)
+        return updated_user
+    except NotFoundError:
+        raise
+    except Exception as e:
+        raise DatabaseError(detail=f"更新用户评分失败: {str(e)}") 
