@@ -128,7 +128,7 @@ async def password_login(account: str, password: str) -> Token:
     使用账号密码登录
     
     参数:
-        account: 用户账号(手机号或者用户名)
+        account: 用户账号(手机号或者用户名或邮箱)
         password: 用户密码
     
     返回:
@@ -537,4 +537,93 @@ async def reset_password(token: str, new_password: str) -> Dict[str, Any]:
         raise ValueError(f"密码重置失败: {str(e)}")
     except Exception as e:
         logger.error(f"密码重置失败(系统错误): {str(e)}")
-        raise Exception(f"密码重置失败: {str(e)}") 
+        raise Exception(f"密码重置失败: {str(e)}")
+
+
+async def register_user(register_data) -> Token:
+    """
+    用户注册
+    
+    参数:
+        register_data: 注册数据，包含username、password、nickname等
+    
+    返回:
+        认证令牌
+    """
+    try:
+        from app.core.security import get_password_hash
+        from app.services.user import get_user_by_account, create_user
+        import re
+        
+        # 验证用户名格式
+        if not re.match(r'^[a-zA-Z0-9_]{4,20}$', register_data.username):
+            raise AuthenticationError(detail="用户名格式错误，只能包含字母、数字和下划线，长度4-20位")
+        
+        # 验证密码强度
+        if len(register_data.password) < 8:
+            raise AuthenticationError(detail="密码长度不能少于8个字符")
+        
+        # 检查密码复杂度：至少包含一个数字和一个字母
+        if not re.search(r'\d', register_data.password) or not re.search(r'[a-zA-Z]', register_data.password):
+            raise AuthenticationError(detail="密码必须包含至少一个数字和一个字母")
+        
+        # 检查用户名是否已存在
+        existing_user = await get_user_by_account(register_data.username)
+        if existing_user:
+            raise AuthenticationError(detail="用户名已存在")
+        
+        # 如果提供了邮箱，检查邮箱是否已存在
+        if register_data.email:
+            existing_user = await get_user_by_account(register_data.email)
+            if existing_user:
+                raise AuthenticationError(detail="邮箱已注册")
+        
+        # 如果提供了手机号，检查手机号是否已存在
+        if register_data.phone:
+            if not re.match(r'^1[3-9]\d{9}$', register_data.phone):
+                raise AuthenticationError(detail="手机号格式错误")
+                
+            existing_user = await get_user_by_account(register_data.phone)
+            if existing_user:
+                raise AuthenticationError(detail="手机号已注册")
+        
+        # 创建用户
+        now = datetime.utcnow()
+        user_data = {
+            "username": register_data.username,
+            "password_hash": get_password_hash(register_data.password),
+            "email": register_data.email,
+            "phone": register_data.phone,
+            "profile": {
+                "nickname": register_data.nickname,
+                "gender": Gender.UNKNOWN.value
+            },
+            "stats": {
+                "recipe_count": 0,
+                "favorite_count": 0,
+                "order_count": 0,
+                "followers_count": 0,
+                "following_count": 0
+            },
+            "is_active": True,
+            "is_verified": False,
+            "created_at": now,
+            "updated_at": now,
+            "last_login": now
+        }
+        
+        user = await create_user(user_data)
+        
+        # 生成认证令牌
+        access_token = create_access_token(subject=user["_id"])
+        refresh_token = create_refresh_token(subject=user["_id"])
+        
+        return Token(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="bearer"
+        )
+    except AuthenticationError:
+        raise
+    except Exception as e:
+        raise AuthenticationError(detail=f"注册失败: {str(e)}") 

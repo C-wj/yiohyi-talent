@@ -18,7 +18,7 @@ async def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
         if not ObjectId.is_valid(user_id):
             return None
         
-        user = await user_collection.find_one({"_id": user_id})
+        user = await user_collection.find_one({"_id": ObjectId(user_id)})
         return user
     except Exception as e:
         raise DatabaseError(detail=f"获取用户失败: {str(e)}")
@@ -87,31 +87,39 @@ async def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     try:
         user_collection = get_collection(USERS_COLLECTION)
         
-        # 检查用户是否已存在
-        if "openid" in user_data:
-            existing_user = await get_user_by_openid(user_data["openid"])
-            if existing_user:
-                return existing_user
-        elif "phone" in user_data:
-            existing_user = await get_user_by_phone(user_data["phone"])
-            if existing_user:
-                return existing_user
-        
         # 设置默认值
         now = datetime.utcnow()
         user_data.setdefault("created_at", now)
         user_data.setdefault("updated_at", now)
+        user_data.setdefault("last_login", now)
         
         # 确保profile字段存在
         if "profile" not in user_data:
-            nickname_src = user_data.get('openid', user_data.get('phone', str(ObjectId())))
             user_data["profile"] = {
-                "nickname": f"用户{nickname_src[-6:]}",
+                "nickname": f"用户{user_data.get('username', str(ObjectId()))[-6:]}",
                 "gender": Gender.UNKNOWN.value
             }
         
+        # 确保stats字段存在
+        if "stats" not in user_data:
+            user_data["stats"] = {
+                "recipe_count": 0,
+                "favorite_count": 0,
+                "order_count": 0,
+                "followers_count": 0,
+                "following_count": 0
+            }
+        
+        # 插入用户数据
         result = await user_collection.insert_one(user_data)
-        created_user = await get_user_by_id(result.inserted_id)
+        if not result.inserted_id:
+            raise DatabaseError(detail="创建用户失败")
+            
+        # 获取创建的用户
+        created_user = await get_user_by_id(str(result.inserted_id))
+        if not created_user:
+            raise DatabaseError(detail="无法获取创建的用户")
+            
         return created_user
     except Exception as e:
         raise DatabaseError(detail=f"创建用户失败: {str(e)}")
@@ -134,7 +142,7 @@ async def update_user(user_id: str, update_data: Dict[str, Any]) -> Dict[str, An
         
         # 执行更新
         await user_collection.update_one(
-            {"_id": user_id},
+            {"_id": ObjectId(user_id)},
             {"$set": update_data}
         )
         
@@ -187,7 +195,7 @@ async def delete_user(user_id: str) -> bool:
             raise NotFoundError(detail=f"用户 {user_id} 不存在")
         
         # 执行删除
-        result = await user_collection.delete_one({"_id": user_id})
+        result = await user_collection.delete_one({"_id": ObjectId(user_id)})
         return result.deleted_count > 0
     except NotFoundError:
         raise
@@ -202,7 +210,7 @@ async def update_user_last_login(user_id: str) -> None:
     try:
         user_collection = get_collection(USERS_COLLECTION)
         await user_collection.update_one(
-            {"_id": user_id},
+            {"_id": ObjectId(user_id)},
             {"$set": {"last_login": datetime.utcnow()}}
         )
     except Exception as e:
@@ -235,7 +243,7 @@ async def update_user_stats(user_id: str, stat_type: str, value: int = 1) -> Dic
         
         # 执行更新
         await user_collection.update_one(
-            {"_id": user_id},
+            {"_id": ObjectId(user_id)},
             {
                 "$inc": {stat_field: value},
                 "$set": {"updated_at": datetime.utcnow()}
@@ -283,7 +291,7 @@ async def update_user_rating(user_id: str, rating: float) -> Dict[str, Any]:
         
         # 执行更新
         await user_collection.update_one(
-            {"_id": user_id},
+            {"_id": ObjectId(user_id)},
             {
                 "$set": {
                     "stats.rating_avg": new_avg,
