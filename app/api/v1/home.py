@@ -1,18 +1,23 @@
 """
 首页相关路由模块
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
+from datetime import datetime
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query, Depends, HTTPException, status
 
 from app.models.homepage import ContentType, HomeContentResponse
 from app.services.homepage import get_swipers, get_featured_recipes, get_popular_recipes, create_swiper, create_card
 from app.db.mongodb import get_database, get_collection
+from app.api.dependencies import get_current_user
+from app.core.response import success_response
+from app.core.decorators import api_response
 
 router = APIRouter()
 
 
 @router.get("/")
+@api_response
 async def get_home_data():
     """
     获取首页数据
@@ -48,79 +53,181 @@ async def get_home_data():
             item["id"] = str(item.pop("_id"))
     
     return {
-        "status": "success",
-        "message": "首页数据获取成功",
-        "data": {
-            "welcome": "欢迎使用家宴菜谱系统",
-            "swipers": swipers,
-            "featured": featured,
-            "popular": popular
-        }
+        "welcome": "欢迎使用家宴菜谱系统",
+        "swipers": swipers,
+        "featured": featured,
+        "popular": popular
     }
 
 
-@router.get("/swipers", response_model=List[HomeContentResponse])
-async def get_home_swipers(
-    limit: int = Query(6, description="返回的轮播图数量")
-):
+@router.get("/swipers")
+@api_response
+async def get_home_swipers():
     """
     获取首页轮播图数据
+    
+    - 返回轮播图列表
     """
-    # 直接从数据库查询轮播图数据
-    collection = get_collection("home_contents")
-    swipers = await collection.find({"type": ContentType.SWIPER.value}).sort("sort_order", 1).to_list(length=limit)
+    # 示例数据
+    swipers = [
+        {
+            "id": "1",
+            "image": "/static/home/banner1.png",
+            "link": "/pages/recipe/list/index?tag=推荐"
+        },
+        {
+            "id": "2",
+            "image": "/static/home/banner2.png",
+            "link": "/pages/recipe/list/index?tag=新品"
+        },
+        {
+            "id": "3",
+            "image": "/static/home/banner3.png",
+            "link": "/pages/recipe/detail/index?id=123"
+        }
+    ]
     
-    # 如果数据库中没有轮播图数据，进行初始化
-    if not swipers:
-        await initialize_default_swipers()
-        swipers = await collection.find({"type": ContentType.SWIPER.value}).sort("sort_order", 1).to_list(length=limit)
-    
-    # 处理数据格式，MongoDB的_id需要转为id字段
-    result = []
-    for swiper in swipers:
-        # 转换ID字段
-        if "_id" in swiper:
-            swiper["id"] = str(swiper.pop("_id"))
-        
-        result.append(swiper)
-    
-    return result[:limit]
+    return swipers
 
 
-@router.get("/cards", response_model=List[HomeContentResponse])
-async def get_home_cards(
-    card_type: str = Query(ContentType.FEATURED.value, description="卡片类型"),
-    limit: int = Query(5, description="返回的卡片数量")
-):
+@router.get("/cards")
+@api_response
+async def get_home_cards():
     """
     获取首页卡片数据
+    
+    - 返回首页卡片列表
     """
-    # 直接从数据库查询卡片数据
-    collection = get_collection("home_contents")
+    # 示例数据
+    cards = [
+        {
+            "id": "1",
+            "title": "每日精选",
+            "image": "/static/home/card1.png",
+            "description": "今日推荐美食",
+            "link": "/pages/recipe/list/index?category=recommended"
+        },
+        {
+            "id": "2",
+            "title": "流行食谱",
+            "image": "/static/home/card2.png",
+            "description": "热门菜品排行",
+            "link": "/pages/recipe/list/index?category=popular"
+        },
+        {
+            "id": "3",
+            "title": "快手简餐",
+            "image": "/static/home/card3.png",
+            "description": "15分钟搞定",
+            "link": "/pages/recipe/list/index?category=quick"
+        },
+        {
+            "id": "4",
+            "title": "家庭聚餐",
+            "image": "/static/home/card4.png",
+            "description": "适合多人分享",
+            "link": "/pages/recipe/list/index?category=family"
+        }
+    ]
     
-    if card_type == ContentType.FEATURED.value:
-        cards = await collection.find({"type": ContentType.FEATURED.value}).sort("sort_order", 1).to_list(length=limit)
-        if not cards:
-            await initialize_default_featured()
-            cards = await collection.find({"type": ContentType.FEATURED.value}).sort("sort_order", 1).to_list(length=limit)
-    elif card_type == ContentType.POPULAR.value:
-        cards = await collection.find({"type": ContentType.POPULAR.value}).sort("sort_order", 1).to_list(length=limit)
-        if not cards:
-            await initialize_default_popular()
-            cards = await collection.find({"type": ContentType.POPULAR.value}).sort("sort_order", 1).to_list(length=limit)
+    return cards
+
+
+@router.get("/recommended")
+@api_response
+async def get_recommended_recipes(current_user: Optional[Dict[str, Any]] = Depends(get_current_user)):
+    """
+    获取推荐菜谱
+    
+    - 可选授权: Bearer Token (有授权则提供个性化推荐)
+    - 返回推荐菜谱列表
+    """
+    # 示例数据 - 根据用户喜好或通用推荐
+    is_personalized = current_user is not None
+    
+    recommended = [
+        {
+            "id": "101",
+            "name": "香煎三文鱼",
+            "image": "/static/recipes/salmon.png",
+            "cookTime": 20,
+            "difficulty": "中等",
+            "tags": ["高蛋白", "低碳水"]
+        },
+        {
+            "id": "102",
+            "name": "西红柿炒鸡蛋",
+            "image": "/static/recipes/tomato_egg.png",
+            "cookTime": 10,
+            "difficulty": "简单",
+            "tags": ["家常菜", "快手菜"]
+        },
+        {
+            "id": "103",
+            "name": "红烧排骨",
+            "image": "/static/recipes/pork_ribs.png",
+            "cookTime": 45,
+            "difficulty": "中等",
+            "tags": ["经典菜", "肉类"]
+        }
+    ]
+    
+    return {
+        "recipes": recommended,
+        "is_personalized": is_personalized
+    }
+
+
+@router.get("/seasonal")
+@api_response
+async def get_seasonal_ingredients():
+    """
+    获取应季食材
+    
+    - 返回当季食材列表
+    """
+    # 获取当前月份 (1-12)
+    current_month = datetime.now().month
+    
+    # 根据月份确定季节
+    season = ""
+    if 3 <= current_month <= 5:
+        season = "春季"
+    elif 6 <= current_month <= 8:
+        season = "夏季"
+    elif 9 <= current_month <= 11:
+        season = "秋季"
     else:
-        cards = []
+        season = "冬季"
     
-    # 处理数据格式，MongoDB的_id需要转为id字段
-    result = []
-    for card in cards:
-        # 转换ID字段
-        if "_id" in card:
-            card["id"] = str(card.pop("_id"))
-        
-        result.append(card)
+    # 示例数据 - 根据季节提供不同食材
+    ingredients = {
+        "春季": [
+            {"id": "1", "name": "春笋", "image": "/static/ingredients/bamboo.png", "description": "鲜嫩多汁"},
+            {"id": "2", "name": "菠菜", "image": "/static/ingredients/spinach.png", "description": "富含铁质"},
+            {"id": "3", "name": "荠菜", "image": "/static/ingredients/shepherds_purse.png", "description": "清香可口"}
+        ],
+        "夏季": [
+            {"id": "4", "name": "西瓜", "image": "/static/ingredients/watermelon.png", "description": "消暑解渴"},
+            {"id": "5", "name": "黄瓜", "image": "/static/ingredients/cucumber.png", "description": "清脆爽口"},
+            {"id": "6", "name": "茄子", "image": "/static/ingredients/eggplant.png", "description": "紫色营养"}
+        ],
+        "秋季": [
+            {"id": "7", "name": "南瓜", "image": "/static/ingredients/pumpkin.png", "description": "香甜可口"},
+            {"id": "8", "name": "栗子", "image": "/static/ingredients/chestnut.png", "description": "香糯滋补"},
+            {"id": "9", "name": "莲藕", "image": "/static/ingredients/lotus_root.png", "description": "清脆爽口"}
+        ],
+        "冬季": [
+            {"id": "10", "name": "白萝卜", "image": "/static/ingredients/radish.png", "description": "清甜脆嫩"},
+            {"id": "11", "name": "橘子", "image": "/static/ingredients/orange.png", "description": "酸甜可口"},
+            {"id": "12", "name": "白菜", "image": "/static/ingredients/cabbage.png", "description": "清甜爽口"}
+        ]
+    }
     
-    return result[:limit]
+    return {
+        "season": season,
+        "ingredients": ingredients.get(season, [])
+    }
 
 
 # 辅助函数，初始化默认数据

@@ -1,9 +1,17 @@
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Generic, TypeVar
 
 from pydantic import BaseModel, Field, EmailStr
 
 from app.models.user import Gender, UserRole
+
+T = TypeVar('T')
+
+class BaseResponse(BaseModel, Generic[T]):
+    """基础响应模型"""
+    status: str
+    message: str
+    data: Optional[T] = None
 
 
 class UserProfileBase(BaseModel):
@@ -151,4 +159,14 @@ class SmsRequest(BaseModel):
 class SmsVerifyRequest(BaseModel):
     """短信验证码验证请求"""
     phoneNumber: str
-    code: str 
+    code: str
+
+
+# 添加用户注册请求模型
+class UserRegisterRequest(BaseModel):
+    """用户注册请求"""
+    username: str
+    password: str
+    nickname: str
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None 

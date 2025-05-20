@@ -124,3 +124,42 @@ docker-compose up -d
 有任何问题或建议，请通过以下方式联系我们：
 - 电子邮件: your-email@example.com
 - GitHub Issues: https://github.com/yourusername/yiohyi-talent/issues
+
+## API标准格式
+
+为确保前后端交互的一致性，所有API响应都遵循以下标准格式：
+
+```json
+{
+  "code": 0,       // 状态码，0表示成功
+  "data": {},      // 业务数据，可以是任意JSON支持的数据类型
+  "msg": "success" // 消息说明
+}
+```
+
+### 状态码说明
+
+- `code = 0`: 成功，前端可以正常处理返回的数据
+- `code = 401`: 需要登录，前端需要清除登录状态并引导用户去登录页
+- `code = 500`: 系统异常，前端需要提示用户系统异常
+- 其他非零值: 业务异常，前端需要显示`msg`字段内容
+
+### 更新API格式
+
+我们提供了一个脚本，可以自动更新所有API路由函数，使用装饰器确保统一的返回格式：
+
+```bash
+# 添加执行权限
+chmod +x scripts/update_api_format.sh
+
+# 运行脚本
+./scripts/update_api_format.sh
+```
+
+### 测试API格式
+
+运行以下命令测试API响应格式是否符合标准：
+
+```bash
+pytest tests/api/test_standard_format.py -v
+```

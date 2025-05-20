@@ -12,6 +12,8 @@ from app.api.v1.admin import homepage as admin_homepage
 from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
 from app.db.redis import get_redis, close_redis_connection
+# 导入自定义中间件和异常处理
+from app.core.exception_handlers import register_exception_handlers
 
 
 # 应用启动和关闭事件处理
@@ -78,6 +80,10 @@ app.add_middleware(
 )
 
 
+# 注册异常处理器
+register_exception_handlers(app)
+
+
 # 添加所有路由
 app.include_router(auth.router, prefix=f"{settings.API_PREFIX}/auth", tags=["认证"])
 app.include_router(users.router, prefix=f"{settings.API_PREFIX}/users", tags=["用户"])
@@ -101,18 +107,22 @@ app.include_router(
 # 健康检查路由
 @app.get("/health", tags=["健康检查"])
 async def health_check():
-    return {"status": "healthy", "version": settings.APP_VERSION}
+    from app.core.response import success_response
+    return success_response(data={"status": "healthy", "version": settings.APP_VERSION})
 
 
 # 根路由
 @app.get("/", tags=["根"])
 async def root():
-    return {
-        "app_name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
-        "docs_url": "/docs" if settings.DEBUG else None,
-        "environment": settings.APP_ENV
-    }
+    from app.core.response import success_response
+    return success_response(
+        data={
+            "app_name": settings.APP_NAME,
+            "version": settings.APP_VERSION,
+            "docs_url": "/docs" if settings.DEBUG else None,
+            "environment": settings.APP_ENV
+        }
+    )
 
 
 # 直接运行此文件时启动服务器

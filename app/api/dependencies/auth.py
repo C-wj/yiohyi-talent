@@ -6,6 +6,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from pydantic import ValidationError
+from bson import ObjectId
 
 from app.core.config import settings
 from app.core.exceptions import AuthenticationError, PermissionDeniedError
@@ -38,7 +39,15 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     
     # 从数据库获取用户
     users_collection = get_collection("users")
-    user = await users_collection.find_one({"_id": user_id})
+    try:
+        # 尝试将user_id转换为ObjectId
+        if ObjectId.is_valid(user_id):
+            user = await users_collection.find_one({"_id": ObjectId(user_id)})
+        else:
+            # 如果不是有效的ObjectId，尝试通过用户名查找
+            user = await users_collection.find_one({"username": user_id})
+    except Exception as e:
+        raise AuthenticationError(detail=f"用户查询失败: {str(e)}")
     
     if not user:
         raise AuthenticationError(detail="用户不存在")
