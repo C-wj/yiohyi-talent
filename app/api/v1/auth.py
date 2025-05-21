@@ -3,18 +3,11 @@ from fastapi.security import OAuth2PasswordBearer
 
 from app.api.dependencies import get_current_user
 from app.core.exceptions import AuthenticationError
-from app.schemas.user import (
-    WechatLoginRequest,
-    WechatLoginResponse,
-    Token,
-    RefreshToken,
-    UserResponse,
-    PasswordLoginRequest,
-    UserRegisterRequest,
-)
+from app.models.user import WechatLoginRequest,WechatLoginResponse,Token,RefreshToken,UserResponse,PasswordLoginRequest,UserRegisterRequest
 from app.services.auth import wechat_login, refresh_token, logout, password_login, register_user
 from app.core.decorators import api_response
 import logging
+from datetime import datetime
 
 router = APIRouter()
 
@@ -56,8 +49,44 @@ async def register(register_data: UserRegisterRequest):
     - **phone**: 手机号（可选）
     - **nickname**: 昵称
     """
-    token = await register_user(register_data)
-    return token
+    try:
+        token = await register_user(register_data)
+        return {
+            "code": 0,
+            "data": {
+                "access_token": token.access_token,
+                "refresh_token": token.refresh_token,
+                "token_type": token.token_type,
+            },
+            "msg": "注册成功"
+        }
+    except AuthenticationError as e:
+        return {
+            "code": 401,
+            "data": None,
+            "msg": str(e)
+        }
+    except Exception as e:
+        logger.error(f"注册异常: {str(e)}")
+        return {
+            "code": 500,
+            "data": None,
+            "msg": f"系统错误: {str(e)}"
+        }
+
+
+@router.get("/health")
+@api_response
+async def health_check():
+    """健康检查接口"""
+    return {
+        "code": 0,
+        "data": {
+            "status": "ok",
+            "timestamp": datetime.now().isoformat()
+        },
+        "msg": "服务正常"
+    }
 
 
 @router.post("/login")

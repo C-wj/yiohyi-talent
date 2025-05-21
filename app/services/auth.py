@@ -3,9 +3,8 @@ from typing import Dict, Any, Tuple
 
 from app.core.exceptions import AuthenticationError
 from app.core.security import create_access_token, create_refresh_token
-from app.models.user import UserProfile, UserStats, Gender
-from app.schemas.user import Token
-from app.services.user import get_user_by_openid, create_user, update_user_last_login, get_user_by_phone, get_user_by_account, get_user_by_email
+from app.models.user import UserProfile, UserStats, Gender,Token
+from app.services.user import get_user_by_openid, create_user, update_user_last_login, get_user_by_phone, get_user_by_account, get_user_by_email, get_user_by_username
 from app.utils.wechat import code2session
 from app.utils.email import send_email
 
@@ -552,14 +551,20 @@ async def register_user(register_data) -> Token:
     """
     try:
         from app.core.security import get_password_hash
-        from app.services.user import get_user_by_account, create_user
+        from app.services.user import get_user_by_username, get_user_by_email, get_user_by_phone, create_user
         import re
         
         # 验证用户名格式
-        if not re.match(r'^[a-zA-Z0-9_]{4,20}$', register_data.username):
-            raise AuthenticationError(detail="用户名格式错误，只能包含字母、数字和下划线，长度4-20位")
+        if not register_data.username:
+            raise AuthenticationError(detail="缺少必要的用户名")
+            
+        if not re.match(r'^[a-zA-Z0-9_]{3,20}$', register_data.username):
+            raise AuthenticationError(detail="用户名格式错误，只能包含字母、数字和下划线，长度3-20位")
         
         # 验证密码强度
+        if not register_data.password:
+            raise AuthenticationError(detail="缺少必要的密码")
+            
         if len(register_data.password) < 8:
             raise AuthenticationError(detail="密码长度不能少于8个字符")
         
@@ -568,13 +573,13 @@ async def register_user(register_data) -> Token:
             raise AuthenticationError(detail="密码必须包含至少一个数字和一个字母")
         
         # 检查用户名是否已存在
-        existing_user = await get_user_by_account(register_data.username)
+        existing_user = await get_user_by_username(register_data.username)
         if existing_user:
             raise AuthenticationError(detail="用户名已存在")
         
         # 如果提供了邮箱，检查邮箱是否已存在
         if register_data.email:
-            existing_user = await get_user_by_account(register_data.email)
+            existing_user = await get_user_by_email(register_data.email)
             if existing_user:
                 raise AuthenticationError(detail="邮箱已注册")
         
@@ -583,9 +588,12 @@ async def register_user(register_data) -> Token:
             if not re.match(r'^1[3-9]\d{9}$', register_data.phone):
                 raise AuthenticationError(detail="手机号格式错误")
                 
-            existing_user = await get_user_by_account(register_data.phone)
+            existing_user = await get_user_by_phone(register_data.phone)
             if existing_user:
                 raise AuthenticationError(detail="手机号已注册")
+        
+        # 设置昵称（如果未提供，使用用户名）
+        nickname = register_data.nickname if register_data.nickname else register_data.username
         
         # 创建用户
         now = datetime.utcnow()
@@ -595,7 +603,7 @@ async def register_user(register_data) -> Token:
             "email": register_data.email,
             "phone": register_data.phone,
             "profile": {
-                "nickname": register_data.nickname,
+                "nickname": nickname,
                 "gender": Gender.UNKNOWN.value
             },
             "stats": {
@@ -615,8 +623,8 @@ async def register_user(register_data) -> Token:
         user = await create_user(user_data)
         
         # 生成认证令牌
-        access_token = create_access_token(subject=user["_id"])
-        refresh_token = create_refresh_token(subject=user["_id"])
+        access_token = create_access_token(subject=user["id"])
+        refresh_token = create_refresh_token(subject=user["id"])
         
         return Token(
             access_token=access_token,

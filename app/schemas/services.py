@@ -1,23 +1,10 @@
-from typing import Optional, List
-from pydantic import BaseModel
+from typing import List, Optional, Dict, Any, Generic, TypeVar
 
+from pydantic import BaseModel, Field
 
-class ServiceBase(BaseModel):
-    """服务基础模型"""
-    id: str
-    name: str
-    icon: str
-    description: str
-    url: str
-    status: str  # active, coming-soon, disabled
+from app.models.user import BaseResponse
 
-
-class ServiceResponse(BaseModel):
+# 服务响应模型
+class ServiceResponse(BaseResponse):
     """服务响应模型"""
-    service: List[ServiceBase]
-
-
-class ServiceListResponse(BaseModel):
-    """服务列表响应模型"""
-    code: int
-    data: ServiceResponse 
+    pass 

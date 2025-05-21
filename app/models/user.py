@@ -1,12 +1,21 @@
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Generic, TypeVar
 
 from bson import ObjectId
 from pydantic import BaseModel, EmailStr, Field, validator
 
 from app.db.mongodb import USERS_COLLECTION
 from app.models.common import PyObjectId
+
+T = TypeVar('T')
+
+# 基础响应模型
+class BaseResponse(BaseModel, Generic[T]):
+    """基础响应模型"""
+    status: str
+    message: str
+    data: Optional[T] = None
 
 
 class Gender(str, Enum):
@@ -55,7 +64,7 @@ class UserSettings(BaseModel):
 class UserBase(BaseModel):
     """用户基础模型"""
     username: str
-    email: EmailStr
+    email: Optional[EmailStr] = None
     avatarUrl: Optional[str] = None
     nickname: Optional[str] = None
     bio: Optional[str] = None
@@ -70,6 +79,10 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     """用户创建模型"""
     password: str
+    email: Optional[EmailStr] = None
+    username: str
+    nickname: Optional[str] = None
+    phone: Optional[str] = None
 
     @validator('password')
     def password_validation(cls, v):
@@ -79,6 +92,12 @@ class UserCreate(UserBase):
             raise ValueError('密码必须包含至少一个数字')
         if not any(char.isupper() for char in v):
             raise ValueError('密码必须包含至少一个大写字母')
+        return v
+        
+    @validator('username')
+    def username_validation(cls, v):
+        if not v or len(v.strip()) < 3:
+            raise ValueError('用户名长度至少为3位')
         return v
 
 
@@ -148,7 +167,8 @@ class UserResponse(UserBase):
 class Token(BaseModel):
     """访问令牌模型"""
     access_token: str
-    token_type: str
+    refresh_token: Optional[str] = None
+    token_type: str = "bearer"
 
 
 class TokenData(BaseModel):
@@ -217,4 +237,138 @@ class User(BaseModel):
                 "updatedAt": "2023-05-10T15:30:00",
                 "lastLoginAt": "2023-05-15T09:20:00"
             }
-        } 
+        }
+
+
+# 添加用户注册请求模型
+class UserRegisterRequest(BaseModel):
+    """用户注册请求"""
+    username: str  # 必填
+    password: str  # 必填
+    nickname: Optional[str] = None
+    email: Optional[EmailStr] = None
+    phone: Optional[str] = None
+    
+    @validator('username')
+    def username_not_empty(cls, v):
+        if not v or len(v.strip()) < 3:
+            raise ValueError('用户名长度至少为3位')
+        if not v.isalnum():
+            raise ValueError('用户名只能包含字母和数字')
+        return v
+        
+    @validator('password')
+    def password_validation(cls, v):
+        if len(v) < 8:
+            raise ValueError('密码长度至少为8位')
+        if not any(char.isdigit() for char in v):
+            raise ValueError('密码必须包含至少一个数字')
+        if not any(char.isupper() for char in v):
+            raise ValueError('密码必须包含至少一个大写字母')
+        return v
+    
+    @validator('phone')
+    def phone_validation(cls, v):
+        if v is None:
+            return v
+        # 中国手机号验证
+        import re
+        if not re.match(r'^1[3-9]\d{9}$', v):
+            raise ValueError('无效的手机号码格式')
+        return v
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "username": "user123",
+                "password": "Password123",
+                "nickname": "张三",
+                "email": "user@example.com",
+                "phone": "13800138000"
+            }
+        }
+
+
+# 微信登录相关模型
+class WechatLoginRequest(BaseModel):
+    """微信登录请求"""
+    code: str
+    user_info: Optional[dict] = None
+
+
+class WechatLoginResponse(BaseModel):
+    """微信登录响应"""
+    session_key: str
+    user: UserResponse
+    token: Token
+
+
+class WechatBindRequest(BaseModel):
+    """微信绑定请求"""
+    code: str
+    open_id: str
+
+
+# 密码登录请求模型
+class PasswordLoginRequest(BaseModel):
+    """账号密码登录请求"""
+    account: str
+    password: str
+
+
+# 刷新令牌模型
+class RefreshToken(BaseModel):
+    """刷新令牌模型"""
+    refresh_token: str
+
+
+# 短信验证码相关模型
+class PhoneNumberRequest(BaseModel):
+    """手机号请求"""
+    phone_number: str
+
+
+class VerifySMSRequest(BaseModel):
+    """短信验证码验证请求"""
+    phone_number: str
+    code: str
+
+
+# 用户资料相关模型
+class UserProfileBase(BaseModel):
+    """用户个人资料基础模型"""
+    nickname: str
+    avatar: Optional[str] = None
+    gender: Gender = Gender.UNKNOWN
+    bio: Optional[str] = None
+    location: Optional[str] = None
+    birthday: Optional[datetime] = None
+    website: Optional[str] = None
+    profession: Optional[str] = None
+    interests: List[str] = Field(default_factory=list)
+    background_image: Optional[str] = None
+
+
+class DietaryPreferenceBase(BaseModel):
+    """饮食偏好基础模型"""
+    dietary: List[str] = Field(default_factory=list)
+    allergies: List[str] = Field(default_factory=list)
+    favorite_cuisines: List[str] = Field(default_factory=list)
+    disliked_ingredients: List[str] = Field(default_factory=list)
+    preferred_meal_time: Optional[str] = None
+    preferred_portion_size: Optional[str] = None
+    health_goals: List[str] = Field(default_factory=list)
+    taste_preferences: Dict[str, int] = Field(default_factory=dict)  # 例如: {"酸": 5, "甜": 3}
+
+
+class NotificationSettingsBase(BaseModel):
+    """通知设置基础模型"""
+    email_notifications: bool = True
+    push_notifications: bool = True
+    sms_notifications: bool = False
+    activity_notifications: bool = True
+    marketing_notifications: bool = False
+    comment_notifications: bool = True
+    follower_notifications: bool = True
+    like_notifications: bool = True
+    message_notifications: bool = True 

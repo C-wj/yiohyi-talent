@@ -166,9 +166,6 @@ class ApiJSONResponse(JSONResponse):
                 "data": content,
                 "msg": msg
             }
-
-        # 使用自定义JSON编码器
-        self.json_encoder = CustomJSONEncoder
             
         super().__init__(
             content=standardized_content,
@@ -176,4 +173,23 @@ class ApiJSONResponse(JSONResponse):
             headers=headers,
             media_type=media_type,
             background=background,
-        ) 
+        )
+    
+    def render(self, content: Any) -> bytes:
+        """
+        使用自定义JSON编码器来渲染响应内容
+        
+        Args:
+            content: 要渲染的内容
+            
+        Returns:
+            bytes: 编码后的JSON字节
+        """
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=True,
+            indent=None,
+            separators=(",", ":"),
+            cls=CustomJSONEncoder,
+        ).encode("utf-8") 

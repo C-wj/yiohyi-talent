@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 from typing import Any, Dict
 
 from bson import ObjectId
@@ -11,7 +11,7 @@ from app.core.auth import (ACCESS_TOKEN_EXPIRE_MINUTES, authenticate_user,
                           update_last_login)
 from app.core.config import settings
 from app.db.mongodb import get_collection, db
-from app.models.user import Token, UserCreate, UserModel, UserResponse, BaseResponse, PhoneNumberRequest, VerifySMSRequest
+from app.models.user import Token, UserModel, UserResponse, BaseResponse, PhoneNumberRequest, VerifySMSRequest, UserRegisterRequest
 
 router = APIRouter(
     prefix="/auth",
@@ -38,31 +38,37 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 
 @router.post("/register", response_model=UserResponse)
-async def register_user(user_data: UserCreate):
+async def register_user(user_data: UserRegisterRequest):
     """注册新用户"""
     # 检查用户名是否已存在
-    if await get_user(user_data.username):
+    if user_data.username and await get_user(user_data.username):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="用户名已存在"
         )
     
-    # 检查邮箱是否已存在
-    if await get_user_by_email(user_data.email):
+    # 检查邮箱是否已存在（只有当用户提供了邮箱时）
+    if user_data.email is not None and await get_user_by_email(user_data.email):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="邮箱已被注册"
         )
     
     # 创建用户数据
-    user_dict = user_data.dict()
+    user_dict = user_data.dict(exclude_unset=True)  # 仅包含设置的字段
     password = user_dict.pop("password")
     user_dict["passwordHash"] = get_password_hash(password)
-    user_dict["isActive"] = True
-    user_dict["isVerified"] = False
-    user_dict["favorites"] = []
-    user_dict["following"] = []
-    user_dict["followers"] = []
+    
+    # 添加系统默认字段
+    user_dict.update({
+        "isActive": True,
+        "isVerified": False,
+        "favorites": [],
+        "following": [],
+        "followers": [],
+        "createdAt": datetime.utcnow(),
+        "updatedAt": datetime.utcnow()
+    })
     
     # 插入数据库
     result = await db.users.insert_one(user_dict)
