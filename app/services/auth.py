@@ -623,8 +623,8 @@ async def register_user(register_data) -> Token:
         user = await create_user(user_data)
         
         # 生成认证令牌
-        access_token = create_access_token(subject=user["id"])
-        refresh_token = create_refresh_token(subject=user["id"])
+        access_token = create_access_token(subject=user["_id"])
+        refresh_token = create_refresh_token(subject=user["_id"])
         
         return Token(
             access_token=access_token,

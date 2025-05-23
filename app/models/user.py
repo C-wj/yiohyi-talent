@@ -246,7 +246,7 @@ class UserRegisterRequest(BaseModel):
     username: str  # 必填
     password: str  # 必填
     nickname: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     
     @validator('username')
@@ -269,12 +269,18 @@ class UserRegisterRequest(BaseModel):
     
     @validator('phone')
     def phone_validation(cls, v):
-        if v is None:
-            return v
+        if v is None or v == "":
+            return None
         # 中国手机号验证
         import re
         if not re.match(r'^1[3-9]\d{9}$', v):
             raise ValueError('无效的手机号码格式')
+        return v
+    
+    @validator('email')
+    def email_validation(cls, v):
+        if v is None or v == "":
+            return None
         return v
     
     class Config:

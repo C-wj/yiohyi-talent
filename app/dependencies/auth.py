@@ -9,6 +9,7 @@ from jose import JWTError, jwt
 from app.core.config import settings
 from app.db.mongodb import get_collection, USERS_COLLECTION
 from app.models.user import UserResponse
+from app.utils.mongodb_utils import MongoDBUtils
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/auth/login")
 
@@ -45,22 +46,20 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
     
     # 从数据库获取用户信息
     users_collection = get_collection(USERS_COLLECTION)
-    user = await users_collection.find_one({"_id": user_id})
+    user = await MongoDBUtils.get_document_by_id(users_collection, user_id)
     
     # 如果用户不存在且为开发环境，提供模拟用户
     if user is None and settings.APP_ENV == "development":
         # 开发环境下，如果用户不存在，返回测试用户
-        return UserResponse(
-            id="test_user_id",
-            username="test_user",
-            email="test@example.com",
-            is_active=True
-        )
+        return {
+            "id": "test_user_id",
+            "username": "test_user",
+            "email": "test@example.com",
+            "is_active": True
+        }
     
     if user is None:
         raise credentials_exception
         
-    # 转换MongoDB _id
-    user["id"] = str(user.pop("_id"))
-    
-    return UserResponse(**user) 
+    # 返回序列化后的用户字典
+    return user 

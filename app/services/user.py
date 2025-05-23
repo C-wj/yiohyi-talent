@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 from app.core.exceptions import NotFoundError, DatabaseError
 from app.db.mongodb import get_collection, USERS_COLLECTION, get_database
 from app.models.user import User, UserProfile, Gender,UserCreate, UserUpdate
+from app.utils.mongodb_utils import MongoDBUtils
 
 logger = logging.getLogger(__name__)
 
@@ -20,17 +21,13 @@ async def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     Returns:
         Optional[Dict[str, Any]]: 用户信息
     """
-    db = get_database()
-    user_collection = db[User.Config.collection]
-    
-    user = await user_collection.find_one({"_id": user_id})
-    if not user:
+    try:
+        db = get_database()
+        user_collection = db[User.Config.collection]
+        return await MongoDBUtils.get_document_by_id(user_collection, user_id)
+    except Exception as e:
+        logger.error(f"获取用户信息失败: {str(e)}")
         return None
-    
-    # 转换ObjectId为字符串
-    user["id"] = str(user.pop("_id"))
-    
-    return user
 
 
 async def get_user_by_openid(openid: str) -> Optional[Dict[str, Any]]:
@@ -138,10 +135,6 @@ async def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
             default_nickname = f"用户{user_data['username']}"
         user_data["profile"] = UserProfile(nickname=default_nickname).dict()
     
-    # 添加时间戳
-    user_data["created_at"] = datetime.utcnow()
-    user_data["updated_at"] = datetime.utcnow()
-    
     db = get_database()
     user_collection = db[User.Config.collection]
     
@@ -155,25 +148,17 @@ async def create_user(user_data: Dict[str, Any]) -> Dict[str, Any]:
     
     if existing_user:
         # 更新用户信息
+        user_data["updated_at"] = datetime.utcnow()
+        user_data["_id"] = existing_user["_id"]  # 保持ID不变
+        
         await user_collection.update_one(
             {"_id": existing_user["_id"]},
-            {"$set": {
-                **user_data,
-                "updated_at": datetime.utcnow(),
-                "_id": existing_user["_id"]  # 保持ID不变
-            }}
+            {"$set": user_data}
         )
-        user = await user_collection.find_one({"_id": existing_user["_id"]})
+        return await MongoDBUtils.get_document_by_id(user_collection, existing_user["_id"])
     else:
         # 新建用户
-        result = await user_collection.insert_one(user_data)
-        user = await user_collection.find_one({"_id": result.inserted_id})
-    
-    # 转换ObjectId为字符串
-    if "_id" in user:
-        user["id"] = str(user.pop("_id"))
-    
-    return user
+        return await MongoDBUtils.create_document(user_collection, user_data)
 
 
 async def update_user(user_id: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
@@ -361,4 +346,41 @@ async def update_user_rating(user_id: str, rating: float) -> Dict[str, Any]:
     except NotFoundError:
         raise
     except Exception as e:
-        raise DatabaseError(detail=f"更新用户评分失败: {str(e)}") 
+        raise DatabaseError(detail=f"更新用户评分失败: {str(e)}")
+
+
+async def update_user_profile(user_id: str, profile_data: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    更新用户资料
+    
+    Args:
+        user_id: 用户ID
+        profile_data: 资料数据
+        
+    Returns:
+        Dict[str, Any]: 更新后的用户信息
+    """
+    db = get_database()
+    user_collection = db[User.Config.collection]
+    
+    # 验证用户ID格式
+    if not MongoDBUtils.validate_object_id(user_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="无效的用户ID格式"
+        )
+    
+    # 检查用户是否存在
+    if not await MongoDBUtils.document_exists(user_collection, user_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="用户不存在"
+        )
+    
+    # 更新用户资料
+    update_data = {
+        "profile": profile_data,
+        "updated_at": datetime.utcnow()
+    }
+    
+    return await MongoDBUtils.update_document(user_collection, user_id, update_data) 

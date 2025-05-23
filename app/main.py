@@ -8,6 +8,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 # 导入所有路由模块
 from app.api.v1 import auth, users, families, recipes, menu_plans, shopping_lists, ingredients, uploads, home, services
+from app.api.v1 import rbac
 from app.api.v1.admin import homepage as admin_homepage
 from app.core.config import settings
 from app.db.mongodb import connect_to_mongo, close_mongo_connection
@@ -95,6 +96,7 @@ app.include_router(ingredients.router, prefix=f"{settings.API_PREFIX}/ingredient
 app.include_router(uploads.router, prefix=f"{settings.API_PREFIX}/uploads", tags=["文件上传"])
 app.include_router(home.router, prefix=f"{settings.API_PREFIX}/home", tags=["首页"])
 app.include_router(services.router, prefix=f"{settings.API_PREFIX}/services", tags=["服务"])
+app.include_router(rbac.router, prefix=f"{settings.API_PREFIX}/rbac", tags=["权限管理"])
 
 # 添加管理员路由
 app.include_router(

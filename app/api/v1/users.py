@@ -33,7 +33,7 @@ async def get_user_profile(current_user: dict = Depends(get_current_user)):
     - 返回用户详细信息
     """
     # 通过ID获取完整的用户信息
-    user_id = current_user.get("user_id")
+    user_id = current_user.get("_id")
     user = await get_user_by_id(user_id)
     
     if not user:
@@ -55,7 +55,7 @@ async def update_user_profile(
     - 需要授权: Bearer Token
     - 返回更新后的用户信息
     """
-    updated_user = await update_user(current_user["user_id"], {"profile": profile.dict()})
+    updated_user = await update_user(current_user["_id"], {"profile": profile.dict()})
     if not updated_user:
         return not_found_response(msg="用户不存在")
     
@@ -75,7 +75,7 @@ async def update_user_preferences(
     - 返回更新后的偏好信息
     """
     # 更新用户饮食偏好
-    updated_user = await update_user(current_user["user_id"], {"preferences": preferences.dict()})
+    updated_user = await update_user(current_user["_id"], {"preferences": preferences.dict()})
     if not updated_user:
         return not_found_response(msg="用户不存在")
     
@@ -96,7 +96,7 @@ async def update_notification_settings(
     - 返回更新后的通知设置
     """
     # 更新用户通知设置
-    updated_user = await update_user(current_user["user_id"], {"notification_settings": settings.dict()})
+    updated_user = await update_user(current_user["_id"], {"notification_settings": settings.dict()})
     if not updated_user:
         return not_found_response(msg="用户不存在")
     
